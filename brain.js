@@ -1,18 +1,34 @@
 const GRID_SIZE = 150;
 const SCROLL_THRESHOLD = GRID_SIZE * 100;
 const AUTO_SCROLL_SPEED = 10;
+const DRAG_DIST = 4;
 
 const options = {
   showGrid: true,
-  drag: true,
-  snap: true
+  drag: false,
+  snap: false,
+  multiple: true
+};
+
+const colourScales = {
+  masses: chroma.scale(['white', 'black']).domain([0, 150]),
+  meltingPoints: chroma.scale(['2395e1','b2d7f0','e9f0b2','ebad3c', 'f34d22']).mode('lrgb').domain([-350, 4000]),
+  ie: chroma.scale(['white', 'f9e03f']).domain([500, 1700])
 };
 
 const win = {};
 
-const camera = {x: 0, y: 0, scale: 1};
+const camera = {x: 0, y: 0, scale: 1, vel: false};
 
 let globalOffsetX = 0, globalOffsetY = 0;
+
+function compDist(dx, dy, val) {
+  const sum = dx * dx + dy * dy;
+  const square = val * val;
+  if (sum < square) return -1;
+  else if (sum > square) return 1;
+  else return 0;
+}
 
 class Card {
 
@@ -21,27 +37,46 @@ class Card {
     this.data = data;
     this.x = 0, this.y = 0;
     this.dragData = null;
+    this.selected = false;
     const elem = document.createElement('div');
     this.elem = elem;
+    if (data.mass !== '?')
+      this.elem.style.setProperty('--mass', colourScales.masses(data.mass).css());
+    if (data.melting !== '?')
+      this.elem.style.setProperty('--melting-point', colourScales.meltingPoints(data.melting).css());
+    if (data.ie !== '?')
+      this.elem.style.setProperty('--ie', colourScales.ie(data.ie).css());
     elem.classList.add('card');
-    elem.innerHTML = data.name;
+    if (data.state !== '?') elem.classList.add(data.state.toLowerCase());
+    if (data.type !== '?') elem.classList.add(data.type.toLowerCase());
+    elem.innerHTML = `<span class="name">${data.name}</span><span class="symbol">${data.symbol}</span>`;
     elem.addEventListener('touchstart', e => {
-      if (!options.drag) return;
       const touch = e.changedTouches[0];
-      this.initDragData(touch.clientX, touch.clientY);
-      parent.touchDrags[touch.identifier] = this;
-      e.preventDefault();
-      this.parent.createTouchListeners();
-      this.toTop();
+      if (options.drag) {
+        this.initDragData(touch.clientX, touch.clientY);
+        parent.touchDrags[touch.identifier] = this;
+        e.preventDefault();
+        this.parent.createTouchListeners();
+        this.toTop();
+      } else if (options.multiple) {
+        parent.touchDrags[touch.identifier] = new SelectionBox(parent, touch.clientX, touch.clientY, this);
+        e.preventDefault();
+        this.parent.createTouchListeners();
+      }
     }, {passive: false});
     elem.addEventListener('mousedown', e => {
-      if (!options.drag) return;
-      if (this.dragData === null) { // make sure it hasn't been touched beforehand
-        this.initDragData(e.clientX, e.clientY);
-        parent.mouseDrag = this;
+      if (options.drag) {
+        if (this.dragData === null) { // make sure it hasn't been touched beforehand
+          this.initDragData(e.clientX, e.clientY);
+          parent.mouseDrag = this;
+          e.preventDefault();
+          this.parent.createMouseListeners();
+          this.toTop();
+        }
+      } else if (options.multiple) {
+        parent.mouseDrag = new SelectionBox(parent, e.clientX, e.clientY, this);
         e.preventDefault();
         this.parent.createMouseListeners();
-        this.toTop();
       }
     });
     parent.fragment.appendChild(elem);
@@ -58,8 +93,7 @@ class Card {
   }
 
   snap() {
-    if (this.snap)
-      this.setPos(Math.round(this.x / GRID_SIZE) * GRID_SIZE, Math.round(this.y / GRID_SIZE) * GRID_SIZE);
+    this.setPos(Math.round(this.x / GRID_SIZE) * GRID_SIZE, Math.round(this.y / GRID_SIZE) * GRID_SIZE);
   }
 
   checkAutoScroll() {
@@ -77,6 +111,9 @@ class Card {
   }
 
   stopDragging() {
+    if (!this.dragData.dragging) {
+      // show element info here
+    }
     this.dragData = null;
     this.elem.classList.remove('dragged');
   }
@@ -92,7 +129,7 @@ class Card {
 
   setDragPos(mouseX, mouseY) {
     if (!this.dragData.dragging) {
-      if (Math.abs(this.dragData.initX - mouseX) > 4 || Math.abs(this.dragData.initY - mouseY) > 4) {
+      if (compDist(this.dragData.initX - mouseX, this.dragData.initY - mouseY, DRAG_DIST) === 1) {
         this.dragData.dragging = true;
         this.startDragging();
       } else {
@@ -103,6 +140,71 @@ class Card {
       mouseX / camera.scale + camera.x - this.dragData.offsetX * GRID_SIZE,
       mouseY / camera.scale + camera.y - this.dragData.offsetY * GRID_SIZE
     );
+  }
+
+}
+
+class SelectionBox {
+
+  constructor(parent, initX, initY, clickTarget) {
+    this.parent = parent;
+    this.initX = this.toCameraX(initX);
+    this.initY = this.toCameraY(initY);
+    this.clickTarget = clickTarget;
+    const elem = document.createElement('div');
+    elem.classList.add('sel-box');
+    parent.wrapper.appendChild(elem);
+    this.elem = elem;
+    this.dragging = false;
+  }
+
+  toCameraX(x) {
+    return x / camera.scale + camera.x;
+  }
+
+  toCameraY(y) {
+    return y / camera.scale + camera.y;
+  }
+
+  setDragPos(mouseX, mouseY) {
+    mouseX = this.toCameraX(mouseX), mouseY = this.toCameraY(mouseY);
+    if (!this.dragging) {
+      if (compDist(this.initX - mouseX, this.initY - mouseY, DRAG_DIST) === 1) {
+        this.dragging = true;
+      } else {
+        return;
+      }
+    }
+    const minX = Math.min(mouseX, this.initX);
+    const minY = Math.min(mouseY, this.initY);
+    const maxX = Math.max(mouseX, this.initX);
+    const maxY = Math.max(mouseY, this.initY);
+    const elem = this.elem;
+    elem.style.width = (maxX - minX) + 'px';
+    elem.style.height = (maxY - minY) + 'px';
+    elem.style.transform = `translate(${minX}px, ${minY}px)`;
+    this.state = [minX, minY, maxX, maxY];
+  }
+
+  stopDragging() {
+    this.parent.wrapper.removeChild(this.elem);
+    if (!this.dragging) {
+      if (this.clickTarget) {
+        this.clickTarget.selected = !this.clickTarget.selected;
+        if (this.clickTarget.selected) this.clickTarget.elem.classList.add('selected');
+        else this.clickTarget.elem.classList.remove('selected');
+      } else {
+        this.parent.clearSelection();
+      }
+      return;
+    }
+    const [minX, minY, maxX, maxY] = this.state.map((n, i) => (i < 2 ? Math.floor : Math.ceil)(n / GRID_SIZE) * GRID_SIZE);
+    this.parent.elements.filter(card =>
+      !card.selected && card.x >= minX && card.y >= minY && card.x < maxX && card.y < maxY)
+    .forEach(card => {
+      card.selected = true;
+      card.elem.classList.add('selected');
+    });
   }
 
 }
@@ -126,10 +228,9 @@ function init([elements]) {
       card.setDragPos(touch.clientX, touch.clientY);
       if (card.scroll) {
         cardParent.touchScroller = null;
-      } else {
-        card.stopDragging();
-        card.snap();
       }
+      if (card.stopDragging) card.stopDragging();
+      if (options.snap && card.snap) card.snap();
       delete cardParent.touchDrags[touch.identifier];
     });
     e.preventDefault();
@@ -149,10 +250,8 @@ function init([elements]) {
     const card = cardParent.mouseDrag;
     if (!card) return;
     card.setDragPos(e.clientX, e.clientY);
-    if (!card.scroll) {
-      card.stopDragging();
-      card.snap();
-    }
+    if (card.stopDragging) card.stopDragging();
+    if (options.snap && card.snap) card.snap();
     cardParent.mouseDrag = null;
     e.preventDefault();
     document.removeEventListener('mousemove', mouseMove);
@@ -179,9 +278,16 @@ function init([elements]) {
       this.mouseListenersCreated = true;
       document.addEventListener('mousemove', mouseMove);
       document.addEventListener('mouseup', mouseEnd);
+    },
+    clearSelection() {
+      this.elements.filter(card => card.selected).forEach(card => {
+        card.selected = false;
+        card.elem.classList.remove('selected');
+      });
     }
   };
   elements = elements.map(data => new Card(cardParent, data));
+  cardParent.elements = elements;
   cardsWrapper.appendChild(cardParent.fragment);
 
   document.addEventListener('touchstart', e => {
@@ -217,7 +323,16 @@ function init([elements]) {
           scroll: true,
           paired: false,
           lastX: touch.clientX, lastY: touch.clientY,
+          dx: 0, dy: 0,
           setDragPos(mouseX, mouseY) {
+            if (mouseX - this.lastX === 0 && mouseY - this.lastY === 0) {
+              camera.xv = -this.dx;
+              camera.yv = -this.dy;
+              camera.vel = true;
+            } else {
+              this.dx = mouseX - this.lastX;
+              this.dy = mouseY - this.lastY;
+            }
             camera.x = initX + touch.clientX / initScale - (this.lastX = mouseX) / camera.scale;
             camera.y = initY + touch.clientY / initScale - (this.lastY = mouseY) / camera.scale;
           }
@@ -229,16 +344,36 @@ function init([elements]) {
   }, {passive: false});
   document.addEventListener('mousedown', e => {
     if (!cardParent.mouseDrag) {
-      const initX = camera.x, initY = camera.y, initScale = camera.scale;
-      cardParent.mouseDrag = {
-        scroll: true,
-        setDragPos(mouseX, mouseY) {
-          camera.x = initX + e.clientX / initScale - mouseX / camera.scale;
-          camera.y = initY + e.clientY / initScale - mouseY / camera.scale;
+      if (options.multiple && e.shiftKey) {
+        cardParent.mouseDrag = new SelectionBox(cardParent, e.clientX, e.clientY, null);
+        e.preventDefault();
+        cardParent.createMouseListeners();
+      } else {
+        const initX = camera.x, initY = camera.y, initScale = camera.scale;
+        cardParent.mouseDrag = {
+          scroll: true,
+          dragging: false,
+          setDragPos(mouseX, mouseY) {
+            if (!this.dragging) {
+              if (compDist(e.clientX - mouseX, e.clientY - mouseY, DRAG_DIST) === 1) {
+                this.dragging = true;
+              } else {
+                return;
+              }
+            }
+            camera.x = initX + e.clientX / initScale - mouseX / camera.scale;
+            camera.y = initY + e.clientY / initScale - mouseY / camera.scale;
+          }
+        };
+        if (options.multiple) {
+          cardParent.mouseDrag.stopDragging = () => {
+            if (!cardParent.mouseDrag.dragging)
+              cardParent.clearSelection();
+          };
         }
-      };
-      e.preventDefault();
-      cardParent.createMouseListeners();
+        e.preventDefault();
+        cardParent.createMouseListeners();
+      }
     }
   });
 
@@ -268,11 +403,19 @@ function init([elements]) {
     }
   });
 
-  function paint() {
+  window.addEventListener('resize', e => {
     win.height = window.innerHeight;
     win.width = window.innerWidth;
-    win.scrollX = window.scrollX;
-    win.scrollY = window.scrollY;
+  });
+
+  function paint() {
+    if (camera.vel) {
+      camera.xv *= 0.9;
+      camera.yv *= 0.9;
+      camera.x += camera.xv;
+      camera.y += camera.yv;
+      if (Math.abs(camera.xv) < 1 && Math.abs(camera.yv) < 1) camera.vel = false;
+    }
 
     cardsWrapper.style.transform = `scale(${camera.scale}) translate(${-camera.x}px, ${-camera.y}px)`;
     document.body.style.backgroundPosition = `${-(camera.x % GRID_SIZE) * camera.scale}px ${-(camera.y % GRID_SIZE) * camera.scale}px`;

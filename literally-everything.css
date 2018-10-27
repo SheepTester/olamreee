@@ -5,7 +5,7 @@ html, body {
 body {
   margin: 0;
   background-color: #eee;
-  color: #333;
+  color: rgba(0, 0, 0, 0.8);
   --card-size: 150px;
 }
 #cards {
@@ -20,12 +20,52 @@ body {
   width: var(--card-size);
   height: var(--card-size);
   background-color: white;
-  border: 1px solid #666;
+  border: 1px solid rgba(0, 0, 0, 0.5);
   padding: 10px;
   box-sizing: border-box;
   border-radius: 5px;
 }
+.name {
+  text-align: center;
+  position: absolute;
+  left: 0;
+  bottom: 16px;
+  width: 100%;
+  font-size: 24px;
+}
+.symbol {
+  text-align: center;
+  position: absolute;
+  left: 0;
+  top: 30px;
+  width: 100%;
+  font-size: 56px;
+}
+.selected {
+  box-shadow: inset 0 0 10px rgb(35, 149, 225, 0.8), 0 0 20px rgb(35, 149, 225, 0.8);
+  padding: 8px;
+}
 .dragged {
   opacity: 0.5;
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.5);
+}
+.sel-box {
+  position: absolute;
+  top: 0;
+  left: 0;
+  border: 1px solid rgb(35, 149, 225, 0.5);
+  background-color: rgb(35, 149, 225, 0.1);
+  box-sizing: border-box;
+  width: 0;
+  height: 0;
+}
+
+body.masses .card {
+  background-color: var(--mass);
+}
+body.melting-points .card {
+  background-color: var(--melting-point);
+}
+body.ie .card {
+  background-color: var(--ie);
 }
