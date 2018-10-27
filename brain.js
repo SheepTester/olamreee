@@ -27,7 +27,7 @@ class Card {
       if (!options.drag) return;
       const touch = e.changedTouches[0];
       this.startDragging();
-      this.dragData = {initX: touch.pageX - this.x, initY: touch.pageY - this.y};
+      this.dragData = {initX: touch.clientX - this.x, initY: touch.clientY - this.y};
       parent.touchDrags[touch.identifier] = this;
       e.preventDefault();
       this.parent.createTouchListeners();
@@ -37,7 +37,7 @@ class Card {
       if (!options.drag) return;
       if (!this.dragging) { // make sure it hasn't been touched beforehand
         this.startDragging();
-        this.dragData = {initX: e.pageX - this.x, initY: e.pageY - this.y};
+        this.dragData = {initX: e.clientX - this.x, initY: e.clientY - this.y};
         parent.mouseDrag = this;
         e.preventDefault();
         this.parent.createMouseListeners();
@@ -85,14 +85,14 @@ class Card {
 }
 
 function init([elements]) {
-  const gridLines = document.getElementById('gridlines');
   const cardsWrapper = document.getElementById('cards');
+  const scrollCapturer = document.getElementById('scroll-trapper');
 
   function touchMove(e) {
     Object.values(e.changedTouches).forEach(touch => {
       const card = cardParent.touchDrags[touch.identifier];
       if (!card) return;
-      card.setPos(touch.pageX - card.dragData.initX, touch.pageY - card.dragData.initY);
+      card.setPos(touch.clientX - card.dragData.initX, touch.clientY - card.dragData.initY);
     });
     e.preventDefault();
   }
@@ -100,7 +100,7 @@ function init([elements]) {
     Object.values(e.changedTouches).forEach(touch => {
       const card = cardParent.touchDrags[touch.identifier];
       if (!card) return;
-      card.setPos(touch.pageX - card.dragData.initX, touch.pageY - card.dragData.initY);
+      card.setPos(touch.clientX - card.dragData.initX, touch.clientY - card.dragData.initY);
       card.stopDragging();
       card.snap();
       delete cardParent.touchDrags[touch.identifier];
@@ -115,13 +115,13 @@ function init([elements]) {
   function mouseMove(e) {
     const card = cardParent.mouseDrag;
     if (!card) return;
-    card.setPos(e.pageX - card.dragData.initX, e.pageY - card.dragData.initY);
+    card.setPos(e.clientX - card.dragData.initX, e.clientY - card.dragData.initY);
     e.preventDefault();
   }
   function mouseEnd(e) {
     const card = cardParent.mouseDrag;
     if (!card) return;
-    card.setPos(e.pageX - card.dragData.initX, e.pageY - card.dragData.initY);
+    card.setPos(e.clientX - card.dragData.initX, e.clientY - card.dragData.initY);
     card.stopDragging();
     card.snap();
     cardParent.mouseDrag = null;
@@ -160,26 +160,25 @@ function init([elements]) {
 
   document.body.style.backgroundImage = `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='${GRID_SIZE}' height='${GRID_SIZE}' fill='none' stroke='rgba(0,0,0,0.1)'%3E%3Cpath d='M0 ${GRID_SIZE}H${GRID_SIZE}V0'/%3E%3C/svg%3E")`;
 
-  function paint() {
+  board.height = window.innerHeight;
+  board.width = window.innerWidth;
+  window.addEventListener('resize', e => {
     board.height = window.innerHeight;
     board.width = window.innerWidth;
-    board.scrollX = window.scrollX;
-    board.scrollY = window.scrollY;
+  });
 
-    /*if (scrollX < SCROLL_THRESHOLD) {
-      globalOffsetX += SCROLL_THRESHOLD * 2;
-      board.scrollX += SCROLL_THRESHOLD * 2;
-      window.scrollBy(SCROLL_THRESHOLD * 2, 0);
-      cardsWrapper.style.transform = `translate(${globalOffsetX}px, ${globalOffsetY}px)`;
+  board.scrollX = 0;
+  board.scrollY = 0;
+
+  function paint() {
+    if (scrollCapturer.scrollTop !== 0 || scrollCapturer.scrollLeft !== 0) {
+      globalOffsetX += scrollCapturer.scrollLeft - board.width;
+      globalOffsetY += scrollCapturer.scrollTop - board.height;
+      cardsWrapper.style.transform = `translate(${-globalOffsetX}px, ${-globalOffsetY}px)`;
     }
-    if (scrollY < SCROLL_THRESHOLD) {
-      globalOffsetY += SCROLL_THRESHOLD * 2;
-      board.scrollY += SCROLL_THRESHOLD * 2;
-      window.scrollBy(0, SCROLL_THRESHOLD * 2);
-      cardsWrapper.style.transform = `translate(${globalOffsetX}px, ${globalOffsetY}px)`;
-    }*/
+    scrollCapturer.scrollTo(board.width, board.height);
 
-    if (cardParent.mouseDrag) cardParent.mouseDrag.checkAutoScroll();
+    // if (cardParent.mouseDrag) cardParent.mouseDrag.checkAutoScroll();
 
     window.requestAnimationFrame(paint);
   }

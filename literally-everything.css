@@ -1,4 +1,4 @@
-html, body, #grid, #cards {
+html, body {
   width: 100%;
   height: 100%;
 }
@@ -16,7 +16,7 @@ body.light {
   --card-border: #666;
 }
 #cards {
-  position: absolute;
+  position: fixed;
   top: 0;
   left: 0;
 }
@@ -35,4 +35,17 @@ body.light {
 .dragged {
   opacity: 0.5;
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.5);
+}
+#scroll-trapper {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 200vw;
+  height: 200vh;
+  z-index: 1;
+  overflow: scroll;
+}
+#scroll-trapper div {
+  width: 300vw;
+  height: 300vh;
 }
