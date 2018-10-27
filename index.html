@@ -11,7 +11,21 @@
     <script src="./chroma.min.js" charset="utf-8"></script>
     <script src="./brain.js" charset="utf-8"></script>
   </head>
-  <body class="ie">
+  <body class="show-name">
     <div id="cards"></div>
+    <div class="tooltip" id="mouse-tooltip">
+      <h3>Mouse</h3>
+      <p><code>ctrl</code> + scroll to zoom</p>
+      <p>hold <code>shift</code> for horizontal scroll</p>
+      <p><code>shift</code> + drag to select multiple elements</p>
+    </div>
+    <div id="show-bar">
+      <button data-prop="name">Name only</button>
+      <button data-prop="mass">Atomic mass</button>
+      <button data-prop="state">State</button>
+      <button data-prop="melting">Melting point</button>
+      <button data-prop="type">Type</button>
+      <button data-prop="ie">Ionization energy (kJ)</button>
+    </div>
   </body>
 </html>

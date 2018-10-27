@@ -5,13 +5,13 @@ const DRAG_DIST = 4;
 
 const options = {
   showGrid: true,
-  drag: false,
-  snap: false,
+  drag: true,
+  snap: true,
   multiple: true
 };
 
 const colourScales = {
-  masses: chroma.scale(['white', 'black']).domain([0, 150]),
+  masses: chroma.scale(['white', '888']).domain([0, 150]),
   meltingPoints: chroma.scale(['2395e1','b2d7f0','e9f0b2','ebad3c', 'f34d22']).mode('lrgb').domain([-350, 4000]),
   ie: chroma.scale(['white', 'f9e03f']).domain([500, 1700])
 };
@@ -40,6 +40,15 @@ class Card {
     this.selected = false;
     const elem = document.createElement('div');
     this.elem = elem;
+    if (data.state !== '?') {
+      data.state = {G: 'gas', L: 'liquid', S: 'solid'}[data.state];
+      elem.classList.add(data.state.toLowerCase());
+    }
+    if (data.type !== '?') {
+      data.type = {M: 'metal', NM: 'nonmetal', SM: 'semimetal'}[data.type];
+      elem.classList.add(data.type.toLowerCase());
+    }
+    elem.innerHTML = Object.keys(data).map(prop => `<span class="${prop}">${data[prop]}</span>`).join('');
     if (data.mass !== '?')
       this.elem.style.setProperty('--mass', colourScales.masses(data.mass).css());
     if (data.melting !== '?')
@@ -47,25 +56,28 @@ class Card {
     if (data.ie !== '?')
       this.elem.style.setProperty('--ie', colourScales.ie(data.ie).css());
     elem.classList.add('card');
-    if (data.state !== '?') elem.classList.add(data.state.toLowerCase());
-    if (data.type !== '?') elem.classList.add(data.type.toLowerCase());
-    elem.innerHTML = `<span class="name">${data.name}</span><span class="symbol">${data.symbol}</span>`;
     elem.addEventListener('touchstart', e => {
       const touch = e.changedTouches[0];
-      if (options.drag) {
-        this.initDragData(touch.clientX, touch.clientY);
-        parent.touchDrags[touch.identifier] = this;
-        e.preventDefault();
-        this.parent.createTouchListeners();
-        this.toTop();
-      } else if (options.multiple) {
+      if (options.multiple) {
         parent.touchDrags[touch.identifier] = new SelectionBox(parent, touch.clientX, touch.clientY, this);
         e.preventDefault();
         this.parent.createTouchListeners();
+      } else if (options.drag) {
+        if (this.dragData === null) {
+          this.initDragData(touch.clientX, touch.clientY);
+          parent.touchDrags[touch.identifier] = this;
+          e.preventDefault();
+          this.parent.createTouchListeners();
+          this.toTop();
+        }
       }
     }, {passive: false});
     elem.addEventListener('mousedown', e => {
-      if (options.drag) {
+      if (options.multiple && e.shiftKey) {
+        parent.mouseDrag = new SelectionBox(parent, e.clientX, e.clientY, this);
+        e.preventDefault();
+        this.parent.createMouseListeners();
+      } else if (options.drag) {
         if (this.dragData === null) { // make sure it hasn't been touched beforehand
           this.initDragData(e.clientX, e.clientY);
           parent.mouseDrag = this;
@@ -73,10 +85,6 @@ class Card {
           this.parent.createMouseListeners();
           this.toTop();
         }
-      } else if (options.multiple) {
-        parent.mouseDrag = new SelectionBox(parent, e.clientX, e.clientY, this);
-        e.preventDefault();
-        this.parent.createMouseListeners();
       }
     });
     parent.fragment.appendChild(elem);
@@ -108,14 +116,25 @@ class Card {
 
   startDragging() {
     this.elem.classList.add('dragged');
+    if (this.selected) {
+      this.dragData.selected.forEach(card => card.elem.classList.add('dragged'));
+    }
   }
 
   stopDragging() {
     if (!this.dragData.dragging) {
       // show element info here
     }
+    if (this.selected) {
+      this.dragData.selected.forEach(card => {
+        card.dragData = null;
+        card.elem.classList.remove('dragged');
+        if (options.snap) card.snap();
+      });
+    }
     this.dragData = null;
     this.elem.classList.remove('dragged');
+    if (options.snap) this.snap();
   }
 
   initDragData(mouseX, mouseY) {
@@ -123,8 +142,16 @@ class Card {
       dragging: false,
       offsetX: (mouseX / camera.scale - this.x + camera.x) / GRID_SIZE,
       offsetY: (mouseY / camera.scale - this.y + camera.y) / GRID_SIZE,
-      imitX: mouseX, initY: mouseY
+      initX: mouseX, initY: mouseY
     };
+    if (this.selected) {
+      const selected = this.parent.elements.filter(card => card.selected && card !== this);
+      selected.forEach(card => card.dragData = {
+        offsetX: (mouseX / camera.scale - card.x + camera.x) / GRID_SIZE,
+        offsetY: (mouseY / camera.scale - card.y + camera.y) / GRID_SIZE
+      });
+      this.dragData.selected = selected;
+    }
   }
 
   setDragPos(mouseX, mouseY) {
@@ -140,6 +167,12 @@ class Card {
       mouseX / camera.scale + camera.x - this.dragData.offsetX * GRID_SIZE,
       mouseY / camera.scale + camera.y - this.dragData.offsetY * GRID_SIZE
     );
+    if (this.selected) {
+      this.dragData.selected.forEach(card => card.setPos(
+        mouseX / camera.scale + camera.x - card.dragData.offsetX * GRID_SIZE,
+        mouseY / camera.scale + camera.y - card.dragData.offsetY * GRID_SIZE
+      ));
+    }
   }
 
 }
@@ -147,9 +180,11 @@ class Card {
 class SelectionBox {
 
   constructor(parent, initX, initY, clickTarget) {
+    this.selectionBox = true;
+    this.canceled = false;
     this.parent = parent;
-    this.initX = this.toCameraX(initX);
-    this.initY = this.toCameraY(initY);
+    this.initX = this.toCameraX(this.lastX = initX);
+    this.initY = this.toCameraY(this.lastY = initY);
     this.clickTarget = clickTarget;
     const elem = document.createElement('div');
     elem.classList.add('sel-box');
@@ -167,7 +202,7 @@ class SelectionBox {
   }
 
   setDragPos(mouseX, mouseY) {
-    mouseX = this.toCameraX(mouseX), mouseY = this.toCameraY(mouseY);
+    mouseX = this.toCameraX(this.lastX = mouseX), mouseY = this.toCameraY(this.lastY = mouseY);
     if (!this.dragging) {
       if (compDist(this.initX - mouseX, this.initY - mouseY, DRAG_DIST) === 1) {
         this.dragging = true;
@@ -187,6 +222,7 @@ class SelectionBox {
   }
 
   stopDragging() {
+    if (this.canceled) return;
     this.parent.wrapper.removeChild(this.elem);
     if (!this.dragging) {
       if (this.clickTarget) {
@@ -207,11 +243,18 @@ class SelectionBox {
     });
   }
 
+  cancel() {
+    this.parent.wrapper.removeChild(this.elem);
+    this.canceled = true;
+  }
+
 }
 
 function init([elements]) {
   const gridLines = document.getElementById('gridlines');
   const cardsWrapper = document.getElementById('cards');
+  const mouseTooltip = document.getElementById('mouse-tooltip');
+  const showBar = document.getElementById('show-bar');
 
   function touchMove(e) {
     Object.values(e.changedTouches).forEach(touch => {
@@ -230,7 +273,6 @@ function init([elements]) {
         cardParent.touchScroller = null;
       }
       if (card.stopDragging) card.stopDragging();
-      if (options.snap && card.snap) card.snap();
       delete cardParent.touchDrags[touch.identifier];
     });
     e.preventDefault();
@@ -251,7 +293,6 @@ function init([elements]) {
     if (!card) return;
     card.setDragPos(e.clientX, e.clientY);
     if (card.stopDragging) card.stopDragging();
-    if (options.snap && card.snap) card.snap();
     cardParent.mouseDrag = null;
     e.preventDefault();
     document.removeEventListener('mousemove', mouseMove);
@@ -296,6 +337,9 @@ function init([elements]) {
       const initX = camera.x, initY = camera.y, initScale = camera.scale;
       if (cardParent.touchScroller !== null) {
         const partner = cardParent.touchDrags[cardParent.touchScroller];
+        if (partner.selectionBox) {
+          partner.cancel();
+        }
         if (partner.paired) return;
         else partner.paired = true;
         const initCX = (touch.clientX + partner.lastX) / 2;
@@ -317,6 +361,12 @@ function init([elements]) {
             recalc(lastVals.x1 = mouseX, lastVals.y1 = mouseY, lastVals.x2, lastVals.y2);
           }
         };
+      } else if (options.multiple) {
+        cardParent.touchScroller = touch.identifier;
+        cardParent.touchDrags[touch.identifier] = new SelectionBox(cardParent, touch.clientX, touch.clientY, null);
+        cardParent.touchDrags[touch.identifier].scroll = true;
+        e.preventDefault();
+        cardParent.createTouchListeners();
       } else {
         cardParent.touchScroller = touch.identifier;
         cardParent.touchDrags[touch.identifier] = {
@@ -381,7 +431,12 @@ function init([elements]) {
     card.setPos(i * GRID_SIZE, 0);
   });
 
-  document.body.style.backgroundImage = `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='${GRID_SIZE}' height='${GRID_SIZE}' fill='none' stroke='rgba(0,0,0,0.1)' stroke-width='2'%3E%3Cpath d='M0 ${GRID_SIZE}H${GRID_SIZE}V0'/%3E%3C/svg%3E")`;
+  document.body.style.backgroundImage = `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='${GRID_SIZE}' height='${GRID_SIZE}' fill='none' stroke='rgba(0,0,0,0.3)' stroke-width='3'%3E%3Cpath d='M0 ${GRID_SIZE}H${GRID_SIZE}V0'/%3E%3C/svg%3E")`;
+
+  document.addEventListener('touchstart', e => {
+    mouseTooltip.classList.add('hidden');
+    options.multiple = false;
+  }, {once: true});
 
   window.addEventListener('wheel', e => {
     if (e.ctrlKey) {
@@ -403,9 +458,23 @@ function init([elements]) {
     }
   });
 
+  win.height = window.innerHeight;
+  win.width = window.innerWidth;
   window.addEventListener('resize', e => {
     win.height = window.innerHeight;
     win.width = window.innerWidth;
+  });
+
+  showBar.addEventListener('touchstart', e => {
+    e.stopPropagation();
+  });
+  showBar.addEventListener('mousedown', e => {
+    e.stopPropagation();
+  });
+  showBar.addEventListener('click', e => {
+    if (e.target.dataset.prop) {
+      document.body.className = 'show-' + e.target.dataset.prop;
+    }
   });
 
   function paint() {
@@ -425,6 +494,9 @@ function init([elements]) {
 
     window.requestAnimationFrame(paint);
   }
+  camera.scale = 0.5;
+  camera.x = -GRID_SIZE / 2;
+  camera.y = -(win.height - GRID_SIZE) / 2 / camera.scale;
   paint();
 }
 

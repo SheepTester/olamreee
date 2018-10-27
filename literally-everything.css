@@ -37,9 +37,12 @@ body {
   text-align: center;
   position: absolute;
   left: 0;
-  top: 30px;
+  top: 42px;
   width: 100%;
   font-size: 56px;
+}
+body.show-name .symbol {
+  top: 30px;
 }
 .selected {
   box-shadow: inset 0 0 10px rgb(35, 149, 225, 0.8), 0 0 20px rgb(35, 149, 225, 0.8);
@@ -60,12 +63,118 @@ body {
   height: 0;
 }
 
-body.masses .card {
+.state, .type, .melting, .mass, .ie {
+  display: none;
+  text-align: center;
+  position: absolute;
+  left: 0;
+  top: 16px;
+  width: 100%;
+  font-size: 24px;
+}
+body.show-mass .card {
   background-color: var(--mass);
 }
-body.melting-points .card {
+body.show-mass .mass {
+  display: block;
+}
+body.show-melting .card {
   background-color: var(--melting-point);
 }
-body.ie .card {
+body.show-melting .melting {
+  display: block;
+}
+body.show-ie .card {
   background-color: var(--ie);
+}
+body.show-ie .ie {
+  display: block;
+}
+
+body.show-state .solid {
+  background-color: #b3834f;
+}
+body.show-state .liquid {
+  background-color: #638ed0;
+}
+body.show-state .gas {
+  background-color: #9bdfed;
+}
+body.show-state .state {
+  display: block;
+}
+
+body.show-type .metal {
+  background-color: #b6b6b6;
+}
+body.show-type .nonmetal {
+  background-color: #9bdfed;
+}
+body.show-type .semimetal {
+  background-color: #7588a4;
+}
+body.show-type .type {
+  display: block;
+}
+
+.tooltip {
+  position: fixed;
+  pointer-events: none;
+  bottom: 0;
+  left: 0;
+  margin: 10px;
+  padding: 10px;
+  background-color: rgba(255, 255, 255, 0.8);
+  opacity: 0.5;
+  animation: pop-in 3.25s;
+  border-radius: 5px;
+}
+.hidden {
+  display: none;
+}
+.tooltip h3, .tooltip p {
+  margin: 0.5em 0;
+}
+.tooltip code {
+  background-color: #ddd;
+  padding: 1px 3px;
+  border-bottom: 3px solid #aaa;
+}
+@keyframes pop-in {
+  0% { opacity: 1; }
+  80% { opacity: 1; }
+  100% { opacity: 0.5; }
+}
+
+#show-bar {
+  font-size: 0;
+  background-color: white;
+  box-shadow: 0 0 3px rgba(0, 0, 0, 0.3);
+  padding: 10px;
+  white-space: nowrap;
+  overflow-x: auto;
+}
+#show-bar button {
+  vertical-align: top;
+  padding: 15px;
+  margin: 10px;
+  border: none;
+  background: none;
+  background-color: #ddd;
+  border-bottom: 3px solid #aaa;
+  font: inherit;
+  font-size: 18px;
+  color: inherit;
+  cursor: pointer;
+  border-radius: 5px;
+}
+#show-bar button:active {
+  border-bottom: none;
+  border-top: 3px solid #aaa;
+}
+#show-bar button:focus {
+  outline: none;
+  background-color: #48aaeb;
+  border-color: #2395e1;
+  color: white;
 }
