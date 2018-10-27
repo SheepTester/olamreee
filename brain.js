@@ -124,8 +124,12 @@ function init([elements]) {
       const card = cardParent.touchDrags[touch.identifier];
       if (!card) return;
       card.setDragPos(touch.clientX, touch.clientY);
-      card.stopDragging();
-      card.snap();
+      if (card.scroll) {
+        cardParent.touchScroller = null;
+      } else {
+        card.stopDragging();
+        card.snap();
+      }
       delete cardParent.touchDrags[touch.identifier];
     });
     e.preventDefault();
@@ -145,8 +149,10 @@ function init([elements]) {
     const card = cardParent.mouseDrag;
     if (!card) return;
     card.setDragPos(e.clientX, e.clientY);
-    card.stopDragging();
-    card.snap();
+    if (!card.scroll) {
+      card.stopDragging();
+      card.snap();
+    }
     cardParent.mouseDrag = null;
     e.preventDefault();
     document.removeEventListener('mousemove', mouseMove);
@@ -158,6 +164,7 @@ function init([elements]) {
     wrapper: cardsWrapper,
     fragment: document.createDocumentFragment(),
     touchDrags: {},
+    touchScroller: null,
     touchListenersCreated: false,
     createTouchListeners() {
       if (this.touchListenersCreated) return;
@@ -177,9 +184,61 @@ function init([elements]) {
   elements = elements.map(data => new Card(cardParent, data));
   cardsWrapper.appendChild(cardParent.fragment);
 
+  document.addEventListener('touchstart', e => {
+    const touch = e.changedTouches[0];
+    if (!cardParent.touchDrags[touch.identifier]) {
+      const initX = camera.x, initY = camera.y, initScale = camera.scale;
+      if (cardParent.touchScroller !== null) {
+        const partner = cardParent.touchDrags[cardParent.touchScroller];
+        if (partner.paired) return;
+        else partner.paired = true;
+        const initCX = (touch.clientX + partner.lastX) / 2;
+        const initCY = (touch.clientY + partner.lastY) / 2;
+        const initDist = Math.hypot(touch.clientX - partner.lastX, touch.clientY - partner.lastY);
+        const lastVals = {x1: touch.clientX, y1: touch.clientY, x2: partner.lastX, y2: partner.lastY};
+        function recalc(x1, y1, x2, y2) {
+          const centreX = (x1 + x2) / 2;
+          const centreY = (y1 + y2) / 2;
+          const dist = Math.hypot(x1 - x2, y1 - y2);
+          camera.scale = dist / initDist * initScale;
+          camera.x = initX + initCX / initScale - centreX / camera.scale;
+          camera.y = initY + initCY / initScale - centreY / camera.scale;
+        }
+        partner.setDragPos = (mouseX, mouseY) => recalc(lastVals.x1, lastVals.y1, lastVals.x2 = mouseX, lastVals.y2 = mouseY);
+        cardParent.touchDrags[touch.identifier] = {
+          scroll: true,
+          setDragPos(mouseX, mouseY) {
+            recalc(lastVals.x1 = mouseX, lastVals.y1 = mouseY, lastVals.x2, lastVals.y2);
+          }
+        };
+      } else {
+        cardParent.touchScroller = touch.identifier;
+        cardParent.touchDrags[touch.identifier] = {
+          scroll: true,
+          paired: false,
+          lastX: touch.clientX, lastY: touch.clientY,
+          setDragPos(mouseX, mouseY) {
+            camera.x = initX + touch.clientX / initScale - (this.lastX = mouseX) / camera.scale;
+            camera.y = initY + touch.clientY / initScale - (this.lastY = mouseY) / camera.scale;
+          }
+        };
+      }
+      e.preventDefault();
+      cardParent.createTouchListeners();
+    }
+  }, {passive: false});
   document.addEventListener('mousedown', e => {
-    if (cardParent.mouseDrag) {
-      //
+    if (!cardParent.mouseDrag) {
+      const initX = camera.x, initY = camera.y, initScale = camera.scale;
+      cardParent.mouseDrag = {
+        scroll: true,
+        setDragPos(mouseX, mouseY) {
+          camera.x = initX + e.clientX / initScale - mouseX / camera.scale;
+          camera.y = initY + e.clientY / initScale - mouseY / camera.scale;
+        }
+      };
+      e.preventDefault();
+      cardParent.createMouseListeners();
     }
   });
 
@@ -187,7 +246,7 @@ function init([elements]) {
     card.setPos(i * GRID_SIZE, 0);
   });
 
-  document.body.style.backgroundImage = `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='${GRID_SIZE}' height='${GRID_SIZE}' fill='none' stroke='rgba(0,0,0,0.1)'%3E%3Cpath d='M0 ${GRID_SIZE}H${GRID_SIZE}V0'/%3E%3C/svg%3E")`;
+  document.body.style.backgroundImage = `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='${GRID_SIZE}' height='${GRID_SIZE}' fill='none' stroke='rgba(0,0,0,0.1)' stroke-width='2'%3E%3Cpath d='M0 ${GRID_SIZE}H${GRID_SIZE}V0'/%3E%3C/svg%3E")`;
 
   window.addEventListener('wheel', e => {
     if (e.ctrlKey) {
