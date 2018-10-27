@@ -15,15 +15,6 @@ body.light {
   --card-back: white;
   --card-border: #666;
 }
-#grid {
-  position: fixed;
-  top: 0;
-  left: 0;
-  z-index: -1;
-}
-#gridlines {
-  stroke: var(--line);
-}
 #cards {
   position: absolute;
   top: 0;
