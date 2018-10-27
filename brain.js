@@ -1,36 +1,30 @@
-const GRID_SIZE = 70;
-
-const camera = {x: 0, y: 0, vel: false, smooth: false};
+const GRID_SIZE = 100;
 
 function init([elements]) {
   const gridLines = document.getElementById('gridlines');
+  const cardsWrapper = document.getElementById('cards');
 
-  document.addEventListener('wheel', e => {
-    camera.x += e.shiftKey ? e.deltaY : e.deltaX;
-    camera.y += e.shiftKey ? 0 : e.deltaY;
+  const cards = document.createDocumentFragment();
+  elements = elements.map(data => {
+    data.elem = document.createElement('div');
+    data.elem.classList.add('card');
+    data.elem.innerHTML = data.symbol;
+    cards.appendChild(data.elem);
+    return data;
   });
+  cardsWrapper.appendChild(cards);
 
   function paint() {
     const height = window.innerHeight;
     const width = window.innerWidth;
+    const scrollX = document.body.scrollLeft;
+    const scrollY = document.body.scrollTop;
 
-    if (camera.vel) {
-      camera.xv *= 0.9;
-      camera.yv *= 0.9;
-      camera.x += camera.xv;
-      camera.y += camera.yv;
-      if (Math.abs(camera.xv) < 1 && Math.abs(camera.yv) < 1) {
-        camera.vel = false;
-      }
-    } else if (camera.smooth) {
-      const dX = camera.destX - camera.x;
-      const dY = camera.destY - ;
-    }
     let path = '';
-    for (let i = -camera.x % GRID_SIZE; i < width; i += GRID_SIZE) {
+    for (let i = -scrollX % GRID_SIZE; i < width; i += GRID_SIZE) {
       path += `M${i} 0V${height}`;
     }
-    for (let i = -camera.y % GRID_SIZE; i < height; i += GRID_SIZE) {
+    for (let i = -scrollY % GRID_SIZE; i < height; i += GRID_SIZE) {
       path += `M0 ${i}H${width}`;
     }
     gridLines.setAttributeNS(null, 'd', path);
