@@ -82,17 +82,15 @@ class Card {
   }
 
   initDragData(mouseX, mouseY) {
-    const visualGridSize = GRID_SIZE * camera.scale;
     this.dragData = {
       dragging: false,
-      offsetX: (mouseX - this.x) / visualGridSize,
-      offsetY: (mouseY - this.y) / visualGridSize,
+      offsetX: (mouseX / camera.scale - this.x + camera.x) / GRID_SIZE,
+      offsetY: (mouseY / camera.scale - this.y + camera.y) / GRID_SIZE,
       imitX: mouseX, initY: mouseY
     };
   }
 
   setDragPos(mouseX, mouseY) {
-    const visualGridSize = GRID_SIZE * camera.scale;
     if (!this.dragData.dragging) {
       if (Math.abs(this.dragData.initX - mouseX) > 4 || Math.abs(this.dragData.initY - mouseY) > 4) {
         this.dragData.dragging = true;
@@ -101,7 +99,10 @@ class Card {
         return;
       }
     }
-    this.setPos(mouseX - this.dragData.offsetX * visualGridSize, mouseY - this.dragData.offsetY * visualGridSize);
+    this.setPos(
+      mouseX / camera.scale + camera.x - this.dragData.offsetX * GRID_SIZE,
+      mouseY / camera.scale + camera.y - this.dragData.offsetY * GRID_SIZE
+    );
   }
 
 }
@@ -175,6 +176,12 @@ function init([elements]) {
   };
   elements = elements.map(data => new Card(cardParent, data));
   cardsWrapper.appendChild(cardParent.fragment);
+
+  document.addEventListener('mousedown', e => {
+    if (cardParent.mouseDrag) {
+      //
+    }
+  });
 
   elements.sort((a, b) => a.data.mass - b.data.mass).forEach((card, i) => {
     card.setPos(i * GRID_SIZE, 0);
