@@ -4,16 +4,9 @@ html, body {
 }
 body {
   margin: 0;
-  background-color: var(--background);
-  color: var(--text);
+  background-color: #eee;
+  color: #333;
   --card-size: 150px;
-}
-body.light {
-  --background: #eee;
-  --text: #333;
-  --line: rgba(0, 0, 0, 0.1);
-  --card-back: white;
-  --card-border: #666;
 }
 #cards {
   position: fixed;
@@ -26,8 +19,8 @@ body.light {
   left: 0;
   width: var(--card-size);
   height: var(--card-size);
-  background-color: var(--card-back);
-  border: 1px solid var(--card-border);
+  background-color: white;
+  border: 1px solid #666;
   padding: 10px;
   box-sizing: border-box;
   border-radius: 5px;
