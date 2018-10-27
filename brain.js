@@ -8,7 +8,9 @@ const options = {
   snap: true
 };
 
-const board = {};
+const win = {};
+
+const camera = {x: 0, y: 0, scale: 1};
 
 let globalOffsetX = 0, globalOffsetY = 0;
 
@@ -18,7 +20,7 @@ class Card {
     this.parent = parent;
     this.data = data;
     this.x = 0, this.y = 0;
-    this.dragging = false;
+    this.dragData = null;
     const elem = document.createElement('div');
     this.elem = elem;
     elem.classList.add('card');
@@ -26,8 +28,7 @@ class Card {
     elem.addEventListener('touchstart', e => {
       if (!options.drag) return;
       const touch = e.changedTouches[0];
-      this.startDragging();
-      this.dragData = {initX: touch.pageX - this.x, initY: touch.pageY - this.y};
+      this.initDragData(touch.clientX, touch.clientY);
       parent.touchDrags[touch.identifier] = this;
       e.preventDefault();
       this.parent.createTouchListeners();
@@ -35,9 +36,8 @@ class Card {
     }, {passive: false});
     elem.addEventListener('mousedown', e => {
       if (!options.drag) return;
-      if (!this.dragging) { // make sure it hasn't been touched beforehand
-        this.startDragging();
-        this.dragData = {initX: e.pageX - this.x, initY: e.pageY - this.y};
+      if (this.dragData === null) { // make sure it hasn't been touched beforehand
+        this.initDragData(e.clientX, e.clientY);
         parent.mouseDrag = this;
         e.preventDefault();
         this.parent.createMouseListeners();
@@ -65,21 +65,44 @@ class Card {
   checkAutoScroll() {
     if (!this.dragging) return;
     let diffX = 0, diffY = 0;
-    if (this.x - board.scrollX < GRID_SIZE / 2) window.scrollBy(diffX = -AUTO_SCROLL_SPEED, 0);
-    else if (this.x - board.scrollX > board.width - GRID_SIZE * 1.5) window.scrollBy(diffX = AUTO_SCROLL_SPEED, 0);
-    if (this.y - board.scrollY < GRID_SIZE / 2) window.scrollBy(0, diffY = -AUTO_SCROLL_SPEED);
-    else if (this.y - board.scrollY > board.height - GRID_SIZE * 1.5) window.scrollBy(0, diffY = AUTO_SCROLL_SPEED);
+    if (this.x - win.scrollX < GRID_SIZE / 2) window.scrollBy(diffX = -AUTO_SCROLL_SPEED, 0);
+    else if (this.x - win.scrollX > win.width - GRID_SIZE * 1.5) window.scrollBy(diffX = AUTO_SCROLL_SPEED, 0);
+    if (this.y - win.scrollY < GRID_SIZE / 2) window.scrollBy(0, diffY = -AUTO_SCROLL_SPEED);
+    else if (this.y - win.scrollY > win.height - GRID_SIZE * 1.5) window.scrollBy(0, diffY = AUTO_SCROLL_SPEED);
     this.setPos(this.x + diffX, this.y + diffY);
   }
 
   startDragging() {
-    this.dragging = true;
     this.elem.classList.add('dragged');
   }
 
   stopDragging() {
-    this.dragging = false;
+    this.dragData = null;
     this.elem.classList.remove('dragged');
+  }
+
+  initDragData(mouseX, mouseY) {
+    this.dragData = {
+      dragging: false,
+      offsetX: (mouseX / camera.scale - this.x + camera.x) / GRID_SIZE,
+      offsetY: (mouseY / camera.scale - this.y + camera.y) / GRID_SIZE,
+      imitX: mouseX, initY: mouseY
+    };
+  }
+
+  setDragPos(mouseX, mouseY) {
+    if (!this.dragData.dragging) {
+      if (Math.abs(this.dragData.initX - mouseX) > 4 || Math.abs(this.dragData.initY - mouseY) > 4) {
+        this.dragData.dragging = true;
+        this.startDragging();
+      } else {
+        return;
+      }
+    }
+    this.setPos(
+      mouseX / camera.scale + camera.x - this.dragData.offsetX * GRID_SIZE,
+      mouseY / camera.scale + camera.y - this.dragData.offsetY * GRID_SIZE
+    );
   }
 
 }
@@ -92,7 +115,7 @@ function init([elements]) {
     Object.values(e.changedTouches).forEach(touch => {
       const card = cardParent.touchDrags[touch.identifier];
       if (!card) return;
-      card.setPos(touch.pageX - card.dragData.initX, touch.pageY - card.dragData.initY);
+      card.setDragPos(touch.clientX, touch.clientY);
     });
     e.preventDefault();
   }
@@ -100,9 +123,13 @@ function init([elements]) {
     Object.values(e.changedTouches).forEach(touch => {
       const card = cardParent.touchDrags[touch.identifier];
       if (!card) return;
-      card.setPos(touch.pageX - card.dragData.initX, touch.pageY - card.dragData.initY);
-      card.stopDragging();
-      card.snap();
+      card.setDragPos(touch.clientX, touch.clientY);
+      if (card.scroll) {
+        cardParent.touchScroller = null;
+      } else {
+        card.stopDragging();
+        card.snap();
+      }
       delete cardParent.touchDrags[touch.identifier];
     });
     e.preventDefault();
@@ -115,15 +142,17 @@ function init([elements]) {
   function mouseMove(e) {
     const card = cardParent.mouseDrag;
     if (!card) return;
-    card.setPos(e.pageX - card.dragData.initX, e.pageY - card.dragData.initY);
+    card.setDragPos(e.clientX, e.clientY);
     e.preventDefault();
   }
   function mouseEnd(e) {
     const card = cardParent.mouseDrag;
     if (!card) return;
-    card.setPos(e.pageX - card.dragData.initX, e.pageY - card.dragData.initY);
-    card.stopDragging();
-    card.snap();
+    card.setDragPos(e.clientX, e.clientY);
+    if (!card.scroll) {
+      card.stopDragging();
+      card.snap();
+    }
     cardParent.mouseDrag = null;
     e.preventDefault();
     document.removeEventListener('mousemove', mouseMove);
@@ -135,6 +164,7 @@ function init([elements]) {
     wrapper: cardsWrapper,
     fragment: document.createDocumentFragment(),
     touchDrags: {},
+    touchScroller: null,
     touchListenersCreated: false,
     createTouchListeners() {
       if (this.touchListenersCreated) return;
@@ -154,19 +184,101 @@ function init([elements]) {
   elements = elements.map(data => new Card(cardParent, data));
   cardsWrapper.appendChild(cardParent.fragment);
 
+  document.addEventListener('touchstart', e => {
+    const touch = e.changedTouches[0];
+    if (!cardParent.touchDrags[touch.identifier]) {
+      const initX = camera.x, initY = camera.y, initScale = camera.scale;
+      if (cardParent.touchScroller !== null) {
+        const partner = cardParent.touchDrags[cardParent.touchScroller];
+        if (partner.paired) return;
+        else partner.paired = true;
+        const initCX = (touch.clientX + partner.lastX) / 2;
+        const initCY = (touch.clientY + partner.lastY) / 2;
+        const initDist = Math.hypot(touch.clientX - partner.lastX, touch.clientY - partner.lastY);
+        const lastVals = {x1: touch.clientX, y1: touch.clientY, x2: partner.lastX, y2: partner.lastY};
+        function recalc(x1, y1, x2, y2) {
+          const centreX = (x1 + x2) / 2;
+          const centreY = (y1 + y2) / 2;
+          const dist = Math.hypot(x1 - x2, y1 - y2);
+          camera.scale = dist / initDist * initScale;
+          camera.x = initX + initCX / initScale - centreX / camera.scale;
+          camera.y = initY + initCY / initScale - centreY / camera.scale;
+        }
+        partner.setDragPos = (mouseX, mouseY) => recalc(lastVals.x1, lastVals.y1, lastVals.x2 = mouseX, lastVals.y2 = mouseY);
+        cardParent.touchDrags[touch.identifier] = {
+          scroll: true,
+          setDragPos(mouseX, mouseY) {
+            recalc(lastVals.x1 = mouseX, lastVals.y1 = mouseY, lastVals.x2, lastVals.y2);
+          }
+        };
+      } else {
+        cardParent.touchScroller = touch.identifier;
+        cardParent.touchDrags[touch.identifier] = {
+          scroll: true,
+          paired: false,
+          lastX: touch.clientX, lastY: touch.clientY,
+          setDragPos(mouseX, mouseY) {
+            camera.x = initX + touch.clientX / initScale - (this.lastX = mouseX) / camera.scale;
+            camera.y = initY + touch.clientY / initScale - (this.lastY = mouseY) / camera.scale;
+          }
+        };
+      }
+      e.preventDefault();
+      cardParent.createTouchListeners();
+    }
+  }, {passive: false});
+  document.addEventListener('mousedown', e => {
+    if (!cardParent.mouseDrag) {
+      const initX = camera.x, initY = camera.y, initScale = camera.scale;
+      cardParent.mouseDrag = {
+        scroll: true,
+        setDragPos(mouseX, mouseY) {
+          camera.x = initX + e.clientX / initScale - mouseX / camera.scale;
+          camera.y = initY + e.clientY / initScale - mouseY / camera.scale;
+        }
+      };
+      e.preventDefault();
+      cardParent.createMouseListeners();
+    }
+  });
+
   elements.sort((a, b) => a.data.mass - b.data.mass).forEach((card, i) => {
     card.setPos(i * GRID_SIZE, 0);
   });
 
-  document.body.style.backgroundImage = `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='${GRID_SIZE}' height='${GRID_SIZE}' fill='none' stroke='rgba(0,0,0,0.1)'%3E%3Cpath d='M0 ${GRID_SIZE}H${GRID_SIZE}V0'/%3E%3C/svg%3E")`;
+  document.body.style.backgroundImage = `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='${GRID_SIZE}' height='${GRID_SIZE}' fill='none' stroke='rgba(0,0,0,0.1)' stroke-width='2'%3E%3Cpath d='M0 ${GRID_SIZE}H${GRID_SIZE}V0'/%3E%3C/svg%3E")`;
+
+  window.addEventListener('wheel', e => {
+    if (e.ctrlKey) {
+      const change = Math.abs(e.deltaY / 1000) + 1;
+      const oldScale = camera.scale;
+      let xDiff = -camera.x * oldScale - e.clientX, yDiff = -camera.y * oldScale - e.clientY;
+      if (e.deltaY > 0) {
+        camera.scale /= change, xDiff /= change, yDiff /= change;
+      } else if (e.deltaY < 0) {
+        camera.scale *= change, xDiff *= change, yDiff *= change;
+      }
+      camera.x = -(e.clientX + xDiff) / camera.scale;
+      camera.y = -(e.clientY + yDiff) / camera.scale;
+      e.preventDefault();
+    } else {
+      camera.x += e.shiftKey ? e.deltaY : e.deltaX;
+      camera.y += e.shiftKey ? e.deltaX : e.deltaY;
+      if (e.deltaX) e.preventDefault();
+    }
+  });
 
   function paint() {
-    board.height = window.innerHeight;
-    board.width = window.innerWidth;
-    board.scrollX = window.scrollX;
-    board.scrollY = window.scrollY;
+    win.height = window.innerHeight;
+    win.width = window.innerWidth;
+    win.scrollX = window.scrollX;
+    win.scrollY = window.scrollY;
 
-    if (cardParent.mouseDrag) cardParent.mouseDrag.checkAutoScroll();
+    cardsWrapper.style.transform = `scale(${camera.scale}) translate(${-camera.x}px, ${-camera.y}px)`;
+    document.body.style.backgroundPosition = `${-(camera.x % GRID_SIZE) * camera.scale}px ${-(camera.y % GRID_SIZE) * camera.scale}px`;
+    document.body.style.backgroundSize = GRID_SIZE * camera.scale + 'px';
+
+    // if (cardParent.mouseDrag) cardParent.mouseDrag.checkAutoScroll();
 
     window.requestAnimationFrame(paint);
   }
