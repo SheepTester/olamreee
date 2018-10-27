@@ -1,11 +1,14 @@
-const GRID_SIZE = 100;
-const SCROLL_THRESHOLD = 500;
+const GRID_SIZE = 150;
+const SCROLL_THRESHOLD = GRID_SIZE * 100;
+const AUTO_SCROLL_SPEED = 10;
 
 const options = {
   showGrid: true,
   drag: true,
   snap: true
 };
+
+const board = {};
 
 let globalOffsetX = 0, globalOffsetY = 0;
 
@@ -19,11 +22,11 @@ class Card {
     const elem = document.createElement('div');
     this.elem = elem;
     elem.classList.add('card');
-    elem.innerHTML = data.symbol;
+    elem.innerHTML = data.name;
     elem.addEventListener('touchstart', e => {
       if (!options.drag) return;
       const touch = e.changedTouches[0];
-      this.dragging = true;
+      this.startDragging();
       this.dragData = {initX: touch.pageX - this.x, initY: touch.pageY - this.y};
       parent.touchDrags[touch.identifier] = this;
       e.preventDefault();
@@ -33,7 +36,7 @@ class Card {
     elem.addEventListener('mousedown', e => {
       if (!options.drag) return;
       if (!this.dragging) { // make sure it hasn't been touched beforehand
-        this.dragging = true;
+        this.startDragging();
         this.dragData = {initX: e.pageX - this.x, initY: e.pageY - this.y};
         parent.mouseDrag = this;
         e.preventDefault();
@@ -59,6 +62,26 @@ class Card {
       this.setPos(Math.round(this.x / GRID_SIZE) * GRID_SIZE, Math.round(this.y / GRID_SIZE) * GRID_SIZE);
   }
 
+  checkAutoScroll() {
+    if (!this.dragging) return;
+    let diffX = 0, diffY = 0;
+    if (this.x - board.scrollX < GRID_SIZE / 2) window.scrollBy(diffX = -AUTO_SCROLL_SPEED, 0);
+    else if (this.x - board.scrollX > board.width - GRID_SIZE * 1.5) window.scrollBy(diffX = AUTO_SCROLL_SPEED, 0);
+    if (this.y - board.scrollY < GRID_SIZE / 2) window.scrollBy(0, diffY = -AUTO_SCROLL_SPEED);
+    else if (this.y - board.scrollY > board.height - GRID_SIZE * 1.5) window.scrollBy(0, diffY = AUTO_SCROLL_SPEED);
+    this.setPos(this.x + diffX, this.y + diffY);
+  }
+
+  startDragging() {
+    this.dragging = true;
+    this.elem.classList.add('dragged');
+  }
+
+  stopDragging() {
+    this.dragging = false;
+    this.elem.classList.remove('dragged');
+  }
+
 }
 
 function init([elements]) {
@@ -78,7 +101,7 @@ function init([elements]) {
       const card = cardParent.touchDrags[touch.identifier];
       if (!card) return;
       card.setPos(touch.pageX - card.dragData.initX, touch.pageY - card.dragData.initY);
-      card.dragging = false;
+      card.stopDragging();
       card.snap();
       delete cardParent.touchDrags[touch.identifier];
     });
@@ -99,7 +122,7 @@ function init([elements]) {
     const card = cardParent.mouseDrag;
     if (!card) return;
     card.setPos(e.pageX - card.dragData.initX, e.pageY - card.dragData.initY);
-    card.dragging = false;
+    card.stopDragging();
     card.snap();
     cardParent.mouseDrag = null;
     e.preventDefault();
@@ -138,23 +161,25 @@ function init([elements]) {
   document.body.style.backgroundImage = `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='${GRID_SIZE}' height='${GRID_SIZE}' fill='none' stroke='rgba(0,0,0,0.1)'%3E%3Cpath d='M0 ${GRID_SIZE}H${GRID_SIZE}V0'/%3E%3C/svg%3E")`;
 
   function paint() {
-    const height = window.innerHeight;
-    const width = window.innerWidth;
-    let scrollX = window.scrollX;
-    let scrollY = window.scrollY;
+    board.height = window.innerHeight;
+    board.width = window.innerWidth;
+    board.scrollX = window.scrollX;
+    board.scrollY = window.scrollY;
 
-    if (scrollX < SCROLL_THRESHOLD) {
-      globalOffsetX += SCROLL_THRESHOLD;
-      scrollX += SCROLL_THRESHOLD;
-      window.scrollBy(SCROLL_THRESHOLD, 0);
+    /*if (scrollX < SCROLL_THRESHOLD) {
+      globalOffsetX += SCROLL_THRESHOLD * 2;
+      board.scrollX += SCROLL_THRESHOLD * 2;
+      window.scrollBy(SCROLL_THRESHOLD * 2, 0);
       cardsWrapper.style.transform = `translate(${globalOffsetX}px, ${globalOffsetY}px)`;
     }
     if (scrollY < SCROLL_THRESHOLD) {
-      globalOffsetY += SCROLL_THRESHOLD;
-      scrollY += SCROLL_THRESHOLD;
-      window.scrollBy(0, SCROLL_THRESHOLD);
+      globalOffsetY += SCROLL_THRESHOLD * 2;
+      board.scrollY += SCROLL_THRESHOLD * 2;
+      window.scrollBy(0, SCROLL_THRESHOLD * 2);
       cardsWrapper.style.transform = `translate(${globalOffsetX}px, ${globalOffsetY}px)`;
-    }
+    }*/
+
+    if (cardParent.mouseDrag) cardParent.mouseDrag.checkAutoScroll();
 
     window.requestAnimationFrame(paint);
   }
