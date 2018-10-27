@@ -166,19 +166,6 @@ function init([elements]) {
     board.scrollX = window.scrollX;
     board.scrollY = window.scrollY;
 
-    /*if (scrollX < SCROLL_THRESHOLD) {
-      globalOffsetX += SCROLL_THRESHOLD * 2;
-      board.scrollX += SCROLL_THRESHOLD * 2;
-      window.scrollBy(SCROLL_THRESHOLD * 2, 0);
-      cardsWrapper.style.transform = `translate(${globalOffsetX}px, ${globalOffsetY}px)`;
-    }
-    if (scrollY < SCROLL_THRESHOLD) {
-      globalOffsetY += SCROLL_THRESHOLD * 2;
-      board.scrollY += SCROLL_THRESHOLD * 2;
-      window.scrollBy(0, SCROLL_THRESHOLD * 2);
-      cardsWrapper.style.transform = `translate(${globalOffsetX}px, ${globalOffsetY}px)`;
-    }*/
-
     if (cardParent.mouseDrag) cardParent.mouseDrag.checkAutoScroll();
 
     window.requestAnimationFrame(paint);
