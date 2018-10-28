@@ -315,6 +315,7 @@ function init([elements]) {
   const menu = document.getElementById('menu');
   const savecode = document.getElementById('savecode');
   const gridToggler = document.getElementById('grid-toggle');
+  const snapToggler = document.getElementById('snap-toggle');
 
   function touchMove(e) {
     Object.values(e.changedTouches).forEach(touch => {
@@ -530,6 +531,10 @@ function init([elements]) {
       document.body.style.backgroundImage = 'none';
     }
   });
+  snapToggler.addEventListener('click', e => {
+    options.snap = !options.snap;
+    snapToggler.textContent = options.snap ? 'disable snapping' : 'enable snapping';
+  });
 
   document.addEventListener('touchstart', e => {
     mouseTooltip.classList.add('hidden');
@@ -603,17 +608,21 @@ function init([elements]) {
       vals.push(Math.round(card.x / GRID_SIZE));
       vals.push(Math.round(card.y / GRID_SIZE));
     });
-    localStorage.setItem(COOKIE_NAME, savecode.value = btoa(JSON.stringify(vals)));
+    return btoa(JSON.stringify(vals));
   }
   if (localStorage.getItem(COOKIE_NAME))
     load(localStorage.getItem(COOKIE_NAME));
   document.getElementById('menu-btn').addEventListener('click', e => {
     menu.classList.add('showing');
     overlayCover.classList.add('showing');
-    save();
+    savecode.value = save();
   });
-  save();
-  setInterval(save, 1000);
+  localStorage.setItem(COOKIE_NAME, save());
+  autosave.addEventListener('click', e => {
+    setInterval(() => localStorage.setItem(COOKIE_NAME, save()), 1000);
+    autosave.disabled = true;
+    autosave.textContent = 'autosave on';
+  });
   document.getElementById('load').addEventListener('click', e => {
     load(savecode.value);
   });

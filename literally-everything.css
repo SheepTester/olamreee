@@ -229,6 +229,10 @@ code {
   border-color: #2395e1;
   color: white;
 }
+#show-bar button:disabled, .menu-btn:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
 
 .floating-btn {
   position: fixed;
