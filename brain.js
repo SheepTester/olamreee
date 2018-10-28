@@ -41,6 +41,12 @@ function compDist(dx, dy, val) {
   else return 0;
 }
 
+function createFragment(elems) {
+  const fragment = document.createDocumentFragment();
+  elems.forEach(elem => elem instanceof Element ? fragment.appendChild(elem) : typeof elem === 'string' && document.createTextNode(elem));
+  return fragment;
+}
+
 class Card {
 
   constructor(parent, data) {
@@ -99,7 +105,6 @@ class Card {
         }
       }
     });
-    parent.fragment.appendChild(elem);
   }
 
   setPos(x, y) {
@@ -370,7 +375,6 @@ function init([elements]) {
 
   const cardParent = {
     wrapper: cardsWrapper,
-    fragment: document.createDocumentFragment(),
     positions: {},
     touchDrags: {},
     touchScroller: null,
@@ -411,7 +415,7 @@ function init([elements]) {
   };
   elements = elements.map(data => new Card(cardParent, data));
   cardParent.elements = elements;
-  cardsWrapper.appendChild(cardParent.fragment);
+  cardsWrapper.appendChild(createFragment(elements.map(card => card.elem)));
 
   document.addEventListener('touchstart', e => {
     if (!cardsWrapper.contains(e.target) && e.target !== document.body) return;
