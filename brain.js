@@ -547,6 +547,10 @@ function init([elements]) {
     }
   });
 
+  document.addEventListener('contextmenu', e => {
+    e.preventDefault();
+  });
+
   win.height = window.innerHeight;
   win.width = window.innerWidth;
   window.addEventListener('resize', e => {
