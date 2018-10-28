@@ -167,7 +167,7 @@ body.show-note .note {
   padding: 10px;
   background-color: rgba(255, 255, 255, 0.8);
   opacity: 0.5;
-  animation: pop-in 3.25s;
+  animation: pop-in 3.25s, fade-out-forever .2s 13s forwards;
   border-radius: 5px;
 }
 .hidden {
@@ -185,6 +185,10 @@ code {
   0% { opacity: 1; }
   80% { opacity: 1; }
   100% { opacity: 0.5; }
+}
+@keyframes fade-out-forever {
+  from { opacity: 0.5; }
+  to { opacity: 0; }
 }
 
 #show-bar {

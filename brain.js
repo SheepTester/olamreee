@@ -2,6 +2,7 @@ const GRID_SIZE = 150;
 const SCROLL_THRESHOLD = GRID_SIZE * 100;
 const AUTO_SCROLL_SPEED = 10;
 const DRAG_DIST = 4;
+const GRID_URL = `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='${GRID_SIZE}' height='${GRID_SIZE}' fill='none' stroke='rgba(0,0,0,0.3)' stroke-width='3'%3E%3Cpath d='M0 ${GRID_SIZE}H${GRID_SIZE}V0'/%3E%3C/svg%3E")`;
 
 const CHARACTERISTICS = {
   'unreactive gas': 'Hadashite, Puzzlite, Shemeshite, and Voyagite are very unreactive. No compounds of these elements are known to exist on Olam.',
@@ -71,7 +72,7 @@ class Card {
     elem.addEventListener('touchstart', e => {
       const touch = e.changedTouches[0];
       if (options.multiple && options.multipleTouch) {
-        parent.touchDrags[touch.identifier] = new SelectionBox(parent, touch.clientX, touch.clientY, this);
+        parent.touchDrags[touch.identifier] = new SelectionBox(parent, touch.clientX, touch.clientY, this, !this.selected);
         e.preventDefault();
         this.parent.createTouchListeners();
       } else if (options.drag) {
@@ -85,7 +86,7 @@ class Card {
     }, {passive: false});
     elem.addEventListener('mousedown', e => {
       if (options.multiple && e.shiftKey) {
-        parent.mouseDrag = new SelectionBox(parent, e.clientX, e.clientY, this);
+        parent.mouseDrag = new SelectionBox(parent, e.clientX, e.clientY, this, !this.selected);
         e.preventDefault();
         this.parent.createMouseListeners();
       } else if (options.drag) {
@@ -231,7 +232,7 @@ class Card {
 
 class SelectionBox {
 
-  constructor(parent, initX, initY, clickTarget) {
+  constructor(parent, initX, initY, clickTarget, setTo) {
     this.selectionBox = true;
     this.canceled = false;
     this.parent = parent;
@@ -243,6 +244,7 @@ class SelectionBox {
     parent.wrapper.appendChild(elem);
     this.elem = elem;
     this.dragging = false;
+    this.setTo = setTo;
   }
 
   toCameraX(x) {
@@ -286,12 +288,13 @@ class SelectionBox {
       }
       return;
     }
+    const setTo = this.setTo;
     const [minX, minY, maxX, maxY] = this.state.map((n, i) => (i < 2 ? Math.floor : Math.ceil)(n / GRID_SIZE) * GRID_SIZE);
     this.parent.elements.filter(card =>
-      !card.selected && card.x >= minX && card.y >= minY && card.x < maxX && card.y < maxY)
+      (setTo ? !card.selected : card.selected) && card.x >= minX && card.y >= minY && card.x < maxX && card.y < maxY)
     .forEach(card => {
-      card.selected = true;
-      card.elem.classList.add('selected');
+      card.selected = setTo;
+      setTo ? card.elem.classList.add('selected') : card.elem.classList.remove('selected');
     });
   }
 
@@ -310,6 +313,7 @@ function init([elements]) {
   const overlayCover = document.getElementById('overlay-cover');
   const menu = document.getElementById('menu');
   const savecode = document.getElementById('savecode');
+  const gridToggler = document.getElementById('grid-toggle');
 
   function touchMove(e) {
     Object.values(e.changedTouches).forEach(touch => {
@@ -431,7 +435,7 @@ function init([elements]) {
         };
       } else if (options.multiple && options.multipleTouch) {
         cardParent.touchScroller = touch.identifier;
-        cardParent.touchDrags[touch.identifier] = new SelectionBox(cardParent, touch.clientX, touch.clientY, null);
+        cardParent.touchDrags[touch.identifier] = new SelectionBox(cardParent, touch.clientX, touch.clientY, null, true);
         cardParent.touchDrags[touch.identifier].scroll = true;
         e.preventDefault();
         cardParent.createTouchListeners();
@@ -478,7 +482,7 @@ function init([elements]) {
     if (!cardsWrapper.contains(e.target) && e.target !== document.body) return;
     if (!cardParent.mouseDrag) {
       if (options.multiple && e.shiftKey) {
-        cardParent.mouseDrag = new SelectionBox(cardParent, e.clientX, e.clientY, null);
+        cardParent.mouseDrag = new SelectionBox(cardParent, e.clientX, e.clientY, null, true);
         e.preventDefault();
         cardParent.createMouseListeners();
       } else {
@@ -514,7 +518,17 @@ function init([elements]) {
     card.reposition(i, 0);
   });
 
-  document.body.style.backgroundImage = `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='${GRID_SIZE}' height='${GRID_SIZE}' fill='none' stroke='rgba(0,0,0,0.3)' stroke-width='3'%3E%3Cpath d='M0 ${GRID_SIZE}H${GRID_SIZE}V0'/%3E%3C/svg%3E")`;
+  document.body.style.backgroundImage = GRID_URL;
+  gridToggler.addEventListener('click', e => {
+    options.showGrid = !options.showGrid;
+    if (options.showGrid) {
+      gridToggler.textContent = 'hide grid';
+      document.body.style.backgroundImage = GRID_URL;
+    } else {
+      gridToggler.textContent = 'show grid';
+      document.body.style.backgroundImage = 'none';
+    }
+  });
 
   document.addEventListener('touchstart', e => {
     mouseTooltip.classList.add('hidden');
@@ -528,6 +542,7 @@ function init([elements]) {
   }, {once: true});
 
   window.addEventListener('wheel', e => {
+    if (!cardsWrapper.contains(e.target) && e.target !== document.body) return;
     if (e.ctrlKey) {
       const change = Math.abs(e.deltaY / 1000) + 1;
       const oldScale = camera.scale;
@@ -589,6 +604,12 @@ function init([elements]) {
       });
     } catch (e) {
       alert('there was a problem with your save code!');
+    }
+  });
+  document.addEventListener('keydown', e => {
+    if (e.keyCode === 27) {
+      const overlayClose = document.querySelector('.overlay.showing .close');
+      if (overlayClose) overlayClose.click();
     }
   });
 
