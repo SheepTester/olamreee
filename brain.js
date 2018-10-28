@@ -3,6 +3,7 @@ const SCROLL_THRESHOLD = GRID_SIZE * 100;
 const AUTO_SCROLL_SPEED = 10;
 const DRAG_DIST = 4;
 const GRID_URL = `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='${GRID_SIZE}' height='${GRID_SIZE}' fill='none' stroke='rgba(0,0,0,0.3)' stroke-width='3'%3E%3Cpath d='M0 ${GRID_SIZE}H${GRID_SIZE}V0'/%3E%3C/svg%3E")`;
+const COOKIE_NAME = '[olamreee] savecode';
 
 const CHARACTERISTICS = {
   'unreactive gas': 'Hadashite, Puzzlite, Shemeshite, and Voyagite are very unreactive. No compounds of these elements are known to exist on Olam.',
@@ -584,19 +585,9 @@ function init([elements]) {
     overlayCover.classList.remove('showing');
   }));
 
-  document.getElementById('menu-btn').addEventListener('click', e => {
-    menu.classList.add('showing');
-    overlayCover.classList.add('showing');
-    const vals = ["approved by the sheep"];
-    elements.forEach(card => {
-      vals.push(Math.round(card.x / GRID_SIZE));
-      vals.push(Math.round(card.y / GRID_SIZE));
-    });
-    savecode.value = btoa(JSON.stringify(vals));
-  });
-  document.getElementById('load').addEventListener('click', e => {
+  function load(code) {
     try {
-      const vals = JSON.parse(atob(savecode.value).trim()).slice(1);
+      const vals = JSON.parse(atob(code).trim()).slice(1);
       cardParent.positions = {};
       elements.forEach((card, i) => {
         card.reposition(vals[i * 2], vals[i * 2 + 1]);
@@ -605,6 +596,26 @@ function init([elements]) {
     } catch (e) {
       alert('there was a problem with your save code!');
     }
+  }
+  function save() {
+    const vals = ["approved by the sheep"];
+    elements.forEach(card => {
+      vals.push(Math.round(card.x / GRID_SIZE));
+      vals.push(Math.round(card.y / GRID_SIZE));
+    });
+    localStorage.setItem(COOKIE_NAME, savecode.value = btoa(JSON.stringify(vals)));
+  }
+  if (localStorage.getItem(COOKIE_NAME))
+    load(localStorage.getItem(COOKIE_NAME));
+  document.getElementById('menu-btn').addEventListener('click', e => {
+    menu.classList.add('showing');
+    overlayCover.classList.add('showing');
+    save();
+  });
+  save();
+  setInterval(save, 1000);
+  document.getElementById('load').addEventListener('click', e => {
+    load(savecode.value);
   });
   document.addEventListener('keydown', e => {
     if (e.keyCode === 27) {
