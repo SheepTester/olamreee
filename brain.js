@@ -119,6 +119,7 @@ class Card {
       this.elem.classList.add('stacked');
     } else {
       this.parent.positions[posStr] = 0;
+      this.elem.classList.remove('stacked');
     }
     this.parent.positions[posStr]++;
   }
@@ -222,7 +223,6 @@ class Card {
   }
 
   reposition(x, y) {
-    this.parent.positions[Math.round(this.x / GRID_SIZE) + '.' + Math.round(this.y / GRID_SIZE)]--;
     this.setPos(x * GRID_SIZE, y * GRID_SIZE);
     this.snap();
   }
@@ -541,8 +541,8 @@ function init([elements]) {
       camera.y = -(e.clientY + yDiff) / camera.scale;
       e.preventDefault();
     } else {
-      camera.x += e.shiftKey ? e.deltaY : e.deltaX;
-      camera.y += e.shiftKey ? e.deltaX : e.deltaY;
+      camera.x += (e.shiftKey ? e.deltaY : e.deltaX) / camera.scale;
+      camera.y += (e.shiftKey ? e.deltaX : e.deltaY) / camera.scale;
       if (e.deltaX) e.preventDefault();
     }
   });
@@ -582,8 +582,10 @@ function init([elements]) {
   document.getElementById('load').addEventListener('click', e => {
     try {
       const vals = JSON.parse(atob(savecode.value).trim()).slice(1);
+      cardParent.positions = {};
       elements.forEach((card, i) => {
         card.reposition(vals[i * 2], vals[i * 2 + 1]);
+        card.toTop();
       });
     } catch (e) {
       alert('there was a problem with your save code!');
