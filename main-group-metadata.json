@@ -1,0 +1,56 @@
+{
+  "_DEFAULT_SORT_": "mass",
+  "mass": {
+    "show-btn": "Atomic mass",
+    "info-label": "Atomic mass",
+    "key": {
+      "type": "range",
+      "colours": ["white", "888"],
+      "domain": [0, 50],
+      "default": "white"
+    }
+  },
+  "melting": {
+    "show-btn": "Melting point",
+    "info-label": "Melting point",
+    "suffix": " K",
+    "key": {
+      "type": "range",
+      "colours": ["2395e1", "b2d7f0", "e9f0b2", "ebad3c", "f34d22"],
+      "domain": [0, 4500],
+      "default": "white"
+    }
+  },
+  "boiling": {
+    "show-btn": "Boiling point",
+    "info-label": "Boiling point",
+    "suffix": " K",
+    "key": {
+      "type": "range",
+      "colours": ["2395e1", "b2d7f0", "e9f0b2", "ebad3c", "f34d22"],
+      "domain": [0, 4500],
+      "default": "white"
+    }
+  },
+  "density": {
+    "show-btn": "Density",
+    "info-label": "Density",
+    "suffix": " g/cm<sup>3</sup>",
+    "key": {
+      "type": "range",
+      "colours": ["white", "888"],
+      "domain": [0, 3],
+      "default": "white"
+    }
+  },
+  "electronegativity": {
+    "show-btn": "Electronegativity",
+    "info-label": "Electronegativity",
+    "key": {
+      "type": "range",
+      "colours": ["white", "efcf30"],
+      "domain": [0, 4],
+      "default": "white"
+    }
+  }
+}

@@ -1,17 +1,11 @@
+const SOURCE = window.location.search === '?main-group' ? './main-group' : './olam';
+
 const GRID_SIZE = 150;
 const SCROLL_THRESHOLD = GRID_SIZE * 100;
 const AUTO_SCROLL_SPEED = 10;
 const DRAG_DIST = 4;
 const GRID_URL = `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='${GRID_SIZE}' height='${GRID_SIZE}' fill='none' stroke='rgba(0,0,0,0.3)' stroke-width='3'%3E%3Cpath d='M0 ${GRID_SIZE}H${GRID_SIZE}V0'/%3E%3C/svg%3E")`;
-const COOKIE_NAME = '[olamreee] savecode';
-
-const CHARACTERISTICS = {
-  'unreactive gas': 'Hadashite, Puzzlite, Shemeshite, and Voyagite are very unreactive. No compounds of these elements are known to exist on Olam.',
-  'triatomic gas': 'Aquagen is a triatomic gas, as is Acidium.',
-  '(see #3)': 'Newairon, Flowing, and Greening all exist as either diatomic gases or crystalline solids. They readily enter into ionic compounds of the form NwX<sub>2</sub> , where X = Fl, or Gr.',
-  'unreactive metal': 'Badgerin, Brooklin, Tennessean, and Zinzan are rather unreactive metals that are used in Olamite coinage.',
-  'high IE': 'Margaran, Chameshan, Halfwanon and Gazozite have higher than expected ionization energies.'
-};
+const COOKIE_NAME = '[olamreee] savecode' + SOURCE;
 
 const options = {
   showGrid: true,
@@ -21,11 +15,7 @@ const options = {
   multipleTouch: false
 };
 
-const colourScales = {
-  masses: chroma.scale(['white', '888']).domain([0, 150]),
-  meltingPoints: chroma.scale(['2395e1','b2d7f0','e9f0b2','ebad3c', 'f34d22']).mode('lrgb').domain([-350, 4000]),
-  ie: chroma.scale(['white', 'f9e03f']).domain([500, 1700])
-};
+const colourScales = {};
 
 const win = {};
 
@@ -47,6 +37,10 @@ function createFragment(elems) {
   return fragment;
 }
 
+function classnameify(value) {
+  return value.toLowerCase().replace(/^([0-9-])/g, 'z$1').replace(/[^a-z0-9-]/g, '') || 'z' + value.charCodeAt();
+}
+
 class Card {
 
   constructor(parent, data) {
@@ -57,24 +51,18 @@ class Card {
     this.selected = false;
     const elem = document.createElement('div');
     this.elem = elem;
-    if (data.state !== '?') {
-      data.state = {G: 'gas', L: 'liquid', S: 'solid'}[data.state];
-      elem.classList.add(data.state.toLowerCase());
-    }
-    if (data.type !== '?') {
-      data.type = {M: 'metal', NM: 'nonmetal', SM: 'semimetal'}[data.type];
-      elem.classList.add(data.type.toLowerCase());
-    }
-    if (data.note) {
-      elem.classList.add(data.note.toLowerCase().replace(/[^a-z0-9]/g, ''));
-    }
-    elem.innerHTML = Object.keys(data).map(prop => `<span class="${prop}">${data[prop]}</span>`).join('');
-    if (data.mass !== '?')
-      this.elem.style.setProperty('--mass', colourScales.masses(data.mass).css());
-    if (data.melting !== '?')
-      this.elem.style.setProperty('--melting-point', colourScales.meltingPoints(data.melting).css());
-    if (data.ie !== '?')
-      this.elem.style.setProperty('--ie', colourScales.ie(data.ie).css());
+    const metadata = parent.metadata;
+    let innerHTML = `<span class="name">${data.name}</span><span class="symbol">${data.symbol}</span>`;
+    Object.keys(metadata).forEach(prop => {
+      if (data[prop] === undefined) return;
+      if (metadata[prop].key.type === 'range') {
+        elem.style.setProperty('--' + prop, colourScales[prop](data[prop]).css());
+      } else {
+        elem.classList.add(`z${prop}-${classnameify(data[prop])}`);
+      }
+      innerHTML += `<span class="z${prop}">${data[prop]}</span>`;
+    });
+    elem.innerHTML = innerHTML;
     elem.classList.add('card');
     elem.addEventListener('touchstart', e => {
       const touch = e.changedTouches[0];
@@ -221,15 +209,17 @@ class Card {
     }
   }
 
-  setInformation({name, mass, state, melting, type, ie, note}) {
+  setInformation(infoElems) {
     const data = this.data;
-    name.innerHTML = `<strong>${data.symbol}</strong> &mdash; ${data.name}`;
-    mass.textContent = data.mass;
-    state.textContent = data.state;
-    melting.textContent = data.melting;
-    type.textContent = data.type;
-    ie.textContent = data.ie;
-    note.innerHTML = CHARACTERISTICS[data.note] || 'This element isn\'t very special :(';
+    const metadata = this.parent.metadata;
+    infoElems.name.innerHTML = `<strong>${data.symbol}</strong> &mdash; ${data.name}`;
+    Object.keys(metadata).forEach(prop => {
+      if (metadata[prop]['info-values']) {
+        infoElems[prop].innerHTML = metadata[prop]['info-values'][data[prop]] || metadata[prop]['info-values']._DEFAULT_;
+      } else {
+        infoElems[prop].innerHTML = data[prop];
+      }
+    });
   }
 
   reposition(x, y) {
@@ -318,7 +308,7 @@ class SelectionBox {
 
 }
 
-function init([elements]) {
+function init([elements, metadata]) {
   const gridLines = document.getElementById('gridlines');
   const cardsWrapper = document.getElementById('cards');
   const mouseTooltip = document.getElementById('mouse-tooltip');
@@ -328,6 +318,70 @@ function init([elements]) {
   const savecode = document.getElementById('savecode');
   const gridToggler = document.getElementById('grid-toggle');
   const snapToggler = document.getElementById('snap-toggle');
+
+  const defaultSort = metadata._DEFAULT_SORT_;
+  delete metadata._DEFAULT_SORT_;
+  const infoElems = {
+    overlayCover: overlayCover,
+    overlay: document.getElementById('element-info'),
+    name: document.getElementById('element-name')
+  };
+  showBar.appendChild(createFragment(Object.keys(metadata).map(prop => {
+    const btn = document.createElement('button');
+    btn.dataset.prop = prop;
+    btn.innerHTML = metadata[prop]['show-btn'];
+    return btn;
+  })));
+  document.getElementById('element-info-content').appendChild(createFragment(Object.keys(metadata).map(prop => {
+    const p = document.createElement('p');
+    p.innerHTML = `<strong>${metadata[prop]['info-label']}</strong>: ${metadata[prop].prefix || ''}`;
+    const span = document.createElement('span');
+    infoElems[prop] = span;
+    p.appendChild(span);
+    if (metadata[prop].suffix) {
+      const suffix = document.createElement('span');
+      suffix.innerHTML = metadata[prop].suffix;
+      p.appendChild(suffix);
+    }
+    return p;
+  })));
+  let css = Object.keys(metadata).map(prop => '.z' + prop).join(',') + `{
+    display: none;
+    text-align: center;
+    position: absolute;
+    left: 0;
+    top: 16px;
+    width: 100%;
+    font-size: 24px;
+  }`;
+  let defaultCSS = `.card{`
+  Object.keys(metadata).forEach(prop => {
+    const colourKey = metadata[prop].key;
+    if (colourKey.type === 'range') {
+      colourScales[prop] = chroma.scale(colourKey.colours).domain(colourKey.domain);
+      css += `body.show-${prop} .card {
+        background-color: var(--${prop});
+      }`;
+      if (colourKey.default) {
+        defaultCSS += `--${prop}:${colourKey.default};`;
+      }
+    } else if (colourKey.type === 'individual') {
+      if (colourKey.default) {
+        css += `body.show-${prop} .card{background-color:${colourKey.default};}`;
+      }
+      Object.keys(colourKey.colours).forEach(val => {
+        css += `body.show-${prop} .z${prop}-${classnameify(val)} {
+          background-color: ${colourKey.colours[val]};
+        }`;
+      });
+    }
+    css += `body.show-${prop} .z${prop} {
+      display: block;
+    }`;
+  });
+  const style = document.createElement('style');
+  style.innerHTML = css;
+  document.head.appendChild(style);
 
   function touchMove(e) {
     Object.values(e.changedTouches).forEach(touch => {
@@ -400,17 +454,8 @@ function init([elements]) {
       });
       this.statusText.textContent = '';
     },
-    infoElems: {
-      overlayCover: overlayCover,
-      overlay: document.getElementById('element-info'),
-      name: document.getElementById('element-name'),
-      mass: document.getElementById('element-mass'),
-      state: document.getElementById('element-state'),
-      melting: document.getElementById('element-melting'),
-      type: document.getElementById('element-type'),
-      ie: document.getElementById('element-ie'),
-      note: document.getElementById('element-note')
-    },
+    infoElems: infoElems,
+    metadata: metadata,
     statusText: document.getElementById('status')
   };
   elements = elements.map(data => new Card(cardParent, data));
@@ -529,7 +574,7 @@ function init([elements]) {
     }
   });
 
-  elements.sort((a, b) => a.data.mass - b.data.mass).forEach((card, i) => {
+  elements.sort((a, b) => a.data[defaultSort] - b.data[defaultSort]).forEach((card, i) => {
     card.reposition(i, 0);
   });
 
@@ -608,6 +653,7 @@ function init([elements]) {
       const vals = JSON.parse(atob(code).trim()).slice(1);
       cardParent.positions = {};
       elements.forEach((card, i) => {
+        if (i * 2 >= vals.length) return;
         card.reposition(vals[i * 2], vals[i * 2 + 1]);
         card.toTop();
       });
@@ -673,6 +719,7 @@ function init([elements]) {
 }
 
 Promise.all([
-  fetch('./olam.json').then(res => res.json()),
+  fetch(`${SOURCE}.json`).then(res => res.json()),
+  fetch(`${SOURCE}-metadata.json`).then(res => res.json()),
   new Promise(res => document.addEventListener('DOMContentLoaded', res, {once: true}))
 ]).then(init);

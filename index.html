@@ -19,29 +19,14 @@
       <p>hold <code>shift</code> for horizontal scroll</p>
       <p><code>shift</code> + drag to select multiple elements</p>
     </div>
-    <div id="show-bar">
-      <button data-prop="name">Name only</button>
-      <button data-prop="mass">Atomic mass</button>
-      <button data-prop="state">State</button>
-      <button data-prop="melting">Melting point</button>
-      <button data-prop="type">Type</button>
-      <button data-prop="ie">Ionization energy (kJ)</button>
-      <button data-prop="note">Special characteristics</button>
-    </div>
+    <div id="show-bar"><button data-prop="name">Name only</button></div>
     <button id="multiple-btn" class="floating-btn hidden">select multiple</button>
     <button id="menu-btn" class="floating-btn">menu</button>
     <div id="overlay-cover"></div>
     <div class="overlay" id="element-info">
       <button class="close">close</button>
       <h1 class="overlay-heading" id="element-name"></h1>
-      <div class="overlay-content">
-        <p><strong>Atomic mass</strong>: <span id="element-mass"></span></p>
-        <p><strong>State of matter at room temperature</strong>: <span id="element-state"></span></p>
-        <p><strong>Melting point</strong>: <span id="element-melting"></span>&deg;C</p>
-        <p><strong>Type</strong>: <span id="element-type"></span></p>
-        <p><strong>Ionization energy</strong>: <span id="element-ie"></span> kJ</p>
-        <p><strong>Notes</strong>: <span id="element-note"></span></p>
-      </div>
+      <div class="overlay-content" id="element-info-content"></div>
     </div>
     <p id="status"></p>
     <div class="overlay" id="menu">

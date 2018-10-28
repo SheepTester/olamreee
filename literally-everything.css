@@ -37,9 +37,6 @@ body {
   padding: 10px;
   box-sizing: border-box;
   border-radius: 5px;
-  --mass: white; /* fallback colours */
-  --ie: white;
-  --melting-point: white;
 }
 .stacked {
   opacity: 0.5;
@@ -82,80 +79,8 @@ body.show-name .symbol {
   height: 0;
 }
 
-.state, .type, .melting, .mass, .ie, .note {
-  display: none;
-  text-align: center;
-  position: absolute;
-  left: 0;
-  top: 16px;
-  width: 100%;
-  font-size: 24px;
-}
-body.show-mass .card {
-  background-color: var(--mass);
-}
-body.show-mass .mass {
-  display: block;
-}
-body.show-melting .card {
-  background-color: var(--melting-point);
-}
-body.show-melting .melting {
-  display: block;
-}
-body.show-ie .card {
-  background-color: var(--ie);
-}
-body.show-ie .ie {
-  display: block;
-}
-
-body.show-state .solid {
-  background-color: #b3834f;
-}
-body.show-state .liquid {
-  background-color: #638ed0;
-}
-body.show-state .gas {
-  background-color: #9bdfed;
-}
-body.show-state .state {
-  display: block;
-}
-
-body.show-type .metal {
-  background-color: #b6b6b6;
-}
-body.show-type .nonmetal {
-  background-color: #9bdfed;
-}
-body.show-type .semimetal {
-  background-color: #7588a4;
-}
-body.show-type .type {
-  display: block;
-}
-
-body.show-note .unreactivegas {
-  background-color: #9bdfed;
-}
-body.show-note .triatomicgas {
-  background-color: #f3a7a7;
-}
-body.show-note .see3 {
-  background-color: #c877e8;
-}
-body.show-note .unreactivemetal {
-  background-color: #7f736f;
-}
-.unreactivemetal .note {
+.znote-unreactivemetal .znote { /* hardcoded exception oh well */
   font-size: 20px;
-}
-body.show-note .highie {
-  background-color: #eade83;
-}
-body.show-note .note {
-  display: block;
 }
 
 .tooltip {

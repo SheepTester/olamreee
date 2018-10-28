@@ -1,0 +1,81 @@
+{
+  "_DEFAULT_SORT_": "mass",
+  "mass": {
+    "show-btn": "Atomic mass",
+    "info-label": "Atomic mass",
+    "key": {
+      "type": "range",
+      "colours": ["white", "888"],
+      "domain": [0, 150],
+      "default": "white"
+    }
+  },
+  "state": {
+    "show-btn": "State",
+    "info-label": "State of matter at room temperature",
+    "key": {
+      "type": "individual",
+      "colours": {
+        "solid": "#b3834f",
+        "liquid": "#638ed0",
+        "gas": "#9bdfed"
+      }
+    }
+  },
+  "melting": {
+    "show-btn": "Melting point",
+    "info-label": "Melting point",
+    "suffix": "&deg;C",
+    "key": {
+      "type": "range",
+      "colours": ["2395e1", "b2d7f0", "e9f0b2", "ebad3c", "f34d22"],
+      "domain": [-350, 4000],
+      "default": "white"
+    }
+  },
+  "type": {
+    "show-btn": "Type",
+    "info-label": "Type",
+    "key": {
+      "type": "individual",
+      "colours": {
+        "metal": "#b6b6b6",
+        "nonmetal": "#9bdfed",
+        "semimetal": "#7588a4"
+      }
+    }
+  },
+  "ie": {
+    "show-btn": "Ionization energy (kJ)",
+    "info-label": "Ionization energy",
+    "suffix": " kJ",
+    "key": {
+      "type": "range",
+      "colours": ["white", "f9e03f"],
+      "domain": [500, 1700],
+      "default": "white"
+    }
+  },
+  "note": {
+    "show-btn": "Special characteristics",
+    "info-label": "Notes",
+    "key": {
+      "type": "individual",
+      "colours": {
+        "unreactivegas": "#9bdfed",
+        "triatomicgas": "#f3a7a7",
+        "see3": "#c877e8",
+        "unreactivemetal": "#7f736f",
+        "highie": "#eade83"
+      }
+    },
+    "info-values": {
+      "unreactive gas": "Hadashite, Puzzlite, Shemeshite, and Voyagite are very unreactive. No compounds of these elements are known to exist on Olam.",
+      "triatomic gas": "Aquagen is a triatomic gas, as is Acidium.",
+      "(see #3)": "Newairon, Flowing, and Greening all exist as either diatomic gases or crystalline solids. They readily enter into ionic compounds of the form NwX<sub>2</sub> , where X = Fl, or Gr.",
+      "unreactive metal": "Badgerin, Brooklin, Tennessean, and Zinzan are rather unreactive metals that are used in Olamite coinage.",
+      "high IE": "Margaran, Chameshan, Halfwanon and Gazozite have higher than expected ionization energies.",
+      "_DEFAULT_": "This element isn't very special :("
+    }
+  }
+}
