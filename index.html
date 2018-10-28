@@ -26,6 +26,51 @@
       <button data-prop="melting">Melting point</button>
       <button data-prop="type">Type</button>
       <button data-prop="ie">Ionization energy (kJ)</button>
+      <button data-prop="note">Special characteristics</button>
+    </div>
+    <button id="multiple-btn" class="floating-btn hidden">select multiple</button>
+    <button id="menu-btn" class="floating-btn">menu</button>
+    <div id="overlay-cover"></div>
+    <div class="overlay" id="element-info">
+      <button class="close">close</button>
+      <h1 class="overlay-heading" id="element-name"></h1>
+      <div class="overlay-content">
+        <p><strong>Atomic mass</strong>: <span id="element-mass"></span></p>
+        <p><strong>State of matter at room temperature</strong>: <span id="element-state"></span></p>
+        <p><strong>Melting point</strong>: <span id="element-melting"></span>&deg;C</p>
+        <p><strong>Type</strong>: <span id="element-type"></span></p>
+        <p><strong>Ionization energy</strong>: <span id="element-ie"></span> kJ</p>
+        <p><strong>Notes</strong>: <span id="element-note"></span></p>
+      </div>
+    </div>
+    <div class="overlay" id="menu">
+      <button class="close">close</button>
+      <h1 class="overlay-heading">Menu</h1>
+      <div class="overlay-content">
+        <h2>Savecode</h2>
+        <textarea id="savecode" placeholder="Paste savecode here"></textarea>
+        <button class="menu-btn" id="load">load</button>
+        <p>Feel free to use screenshots of the colour-coded elements in your textbook chapter.</p>
+        <h2>Help</h2>
+        <p>The app is intentionally in Times New Roman.</p>
+        <h3>Mouse</h3>
+        <p>You can drag on the grid or scroll to pan around.</p>
+        <p>Hold <code>ctrl</code> while scrolling to zoom.</p>
+        <p>Hold <code>shift</code> while scrolling vertically to horizontally scroll.</p>
+        <p>Drag the Olamite element cards to move them.</p>
+        <p>Hold <code>shift</code> while dragging to select multiple elements; then you can drag one of the selected elements to move all of them at once.</p>
+        <p>Hold <code>shift</code> to select/deselect individual elements.</p>
+        <p><code>shift</code>-click the grid to clear your selection.</p>
+        <h3>Touch</h3>
+        <p>Drag your finger on the grid to pan around.</p>
+        <p>Use two fingers to zoom.</p>
+        <p>Drag the Olamite element cards to move them.</p>
+        <p>Use "select multiple" mode to select multiple element; you can use two fingers to pan around while in this mode. To drag the elements, you need to turn off this mode first.</p>
+        <h2>About</h2>
+        <p>Olamreee (three e's; pronounced "oh-lahm REEEEEE") was made by <a href="https://sheeptester.github.io/">Sean</a>, the same person who made <a href="https://orbiit.github.io/gunn-web-app/">UGWA</a> and posted surviv.io on Schoology.</p>
+        <p>This web app is open-sourced on <a href="https://github.com/SheepTester/olamreee">Github</a>; you can submit bug reports and questions there as issues or as emails to <a href="mailto:sy24484@pausd.us">sy24484@pausd.us</a>.</p>
+        <p>Thanks to Dr. Mellows for this rather intriguing project :)</p>
+      </div>
     </div>
   </body>
 </html>

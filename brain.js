@@ -3,11 +3,20 @@ const SCROLL_THRESHOLD = GRID_SIZE * 100;
 const AUTO_SCROLL_SPEED = 10;
 const DRAG_DIST = 4;
 
+const CHARACTERISTICS = {
+  'unreactive gas': 'Hadashite, Puzzlite, Shemeshite, and Voyagite are very unreactive. No compounds of these elements are known to exist on Olam.',
+  'triatomic gas': 'Aquagen is a triatomic gas, as is Acidium.',
+  '(see #3)': 'Newairon, Flowing, and Greening all exist as either diatomic gases or crystalline solids. They readily enter into ionic compounds of the form NwX<sub>2</sub> , where X = Fl, or Gr.',
+  'unreactive metal': 'Badgerin, Brooklin, Tennessean, and Zinzan are rather unreactive metals that are used in Olamite coinage.',
+  'high IE': 'Margaran, Chameshan, Halfwanon and Gazozite have higher than expected ionization energies.'
+};
+
 const options = {
   showGrid: true,
   drag: true,
   snap: true,
-  multiple: true
+  multiple: true,
+  multipleTouch: false
 };
 
 const colourScales = {
@@ -48,6 +57,9 @@ class Card {
       data.type = {M: 'metal', NM: 'nonmetal', SM: 'semimetal'}[data.type];
       elem.classList.add(data.type.toLowerCase());
     }
+    if (data.note) {
+      elem.classList.add(data.note.toLowerCase().replace(/[^a-z0-9]/g, ''));
+    }
     elem.innerHTML = Object.keys(data).map(prop => `<span class="${prop}">${data[prop]}</span>`).join('');
     if (data.mass !== '?')
       this.elem.style.setProperty('--mass', colourScales.masses(data.mass).css());
@@ -58,7 +70,7 @@ class Card {
     elem.classList.add('card');
     elem.addEventListener('touchstart', e => {
       const touch = e.changedTouches[0];
-      if (options.multiple) {
+      if (options.multiple && options.multipleTouch) {
         parent.touchDrags[touch.identifier] = new SelectionBox(parent, touch.clientX, touch.clientY, this);
         e.preventDefault();
         this.parent.createTouchListeners();
@@ -68,7 +80,6 @@ class Card {
           parent.touchDrags[touch.identifier] = this;
           e.preventDefault();
           this.parent.createTouchListeners();
-          this.toTop();
         }
       }
     }, {passive: false});
@@ -83,7 +94,6 @@ class Card {
           parent.mouseDrag = this;
           e.preventDefault();
           this.parent.createMouseListeners();
-          this.toTop();
         }
       }
     });
@@ -101,7 +111,16 @@ class Card {
   }
 
   snap() {
-    this.setPos(Math.round(this.x / GRID_SIZE) * GRID_SIZE, Math.round(this.y / GRID_SIZE) * GRID_SIZE);
+    const x = Math.round(this.x / GRID_SIZE);
+    const y = Math.round(this.y / GRID_SIZE);
+    this.setPos(x * GRID_SIZE, y * GRID_SIZE);
+    const posStr = x + '.' + y;
+    if (this.parent.positions[posStr]) {
+      this.elem.classList.add('stacked');
+    } else {
+      this.parent.positions[posStr] = 0;
+    }
+    this.parent.positions[posStr]++;
   }
 
   checkAutoScroll() {
@@ -114,44 +133,66 @@ class Card {
     this.setPos(this.x + diffX, this.y + diffY);
   }
 
-  startDragging() {
+  becomeDragged() {
     this.elem.classList.add('dragged');
+    this.elem.classList.remove('stacked');
+    this.parent.positions[Math.round(this.x / GRID_SIZE) + '.' + Math.round(this.y / GRID_SIZE)]--;
+  }
+
+  startDragging() {
+    this.becomeDragged();
     if (this.selected) {
-      this.dragData.selected.forEach(card => card.elem.classList.add('dragged'));
+      this.dragData.selected.forEach(card => card.becomeDragged());
     }
+  }
+
+  becomeDropped(dragging) {
+    if (dragging) {
+      this.elem.classList.remove('dragged');
+      if (options.snap) this.snap();
+    }
+    this.dragData = null;
   }
 
   stopDragging() {
     if (!this.dragData.dragging) {
-      // show element info here
+      this.parent.infoElems.overlayCover.classList.add('showing');
+      this.parent.infoElems.overlay.classList.add('showing');
+      this.setInformation(this.parent.infoElems);
     }
+    const selected = this.dragData.selected;
+    const dragging = this.dragData.dragging;
+    this.becomeDropped(dragging);
     if (this.selected) {
-      this.dragData.selected.forEach(card => {
-        card.dragData = null;
-        card.elem.classList.remove('dragged');
-        if (options.snap) card.snap();
-      });
+      selected.forEach(card => card.becomeDropped(dragging));
     }
-    this.dragData = null;
-    this.elem.classList.remove('dragged');
-    if (options.snap) this.snap();
+  }
+
+  fillDropData(mouseX, mouseY) {
+    this.dragData = {
+      offsetX: (mouseX / camera.scale - this.x + camera.x) / GRID_SIZE,
+      offsetY: (mouseY / camera.scale - this.y + camera.y) / GRID_SIZE
+    };
+    this.toTop();
   }
 
   initDragData(mouseX, mouseY) {
-    this.dragData = {
-      dragging: false,
-      offsetX: (mouseX / camera.scale - this.x + camera.x) / GRID_SIZE,
-      offsetY: (mouseY / camera.scale - this.y + camera.y) / GRID_SIZE,
-      initX: mouseX, initY: mouseY
-    };
+    this.fillDropData(mouseX, mouseY);
+    this.dragData.dragging = false;
+    this.dragData.initX = mouseX;
+    this.dragData.initY = mouseY;
     if (this.selected) {
       const selected = this.parent.elements.filter(card => card.selected && card !== this);
-      selected.forEach(card => card.dragData = {
-        offsetX: (mouseX / camera.scale - card.x + camera.x) / GRID_SIZE,
-        offsetY: (mouseY / camera.scale - card.y + camera.y) / GRID_SIZE
-      });
+      selected.forEach(card => card.fillDropData(mouseX, mouseY));
       this.dragData.selected = selected;
     }
+  }
+
+  setPosFromMouse(mouseX, mouseY) {
+    this.setPos(
+      mouseX / camera.scale + camera.x - this.dragData.offsetX * GRID_SIZE,
+      mouseY / camera.scale + camera.y - this.dragData.offsetY * GRID_SIZE
+    );
   }
 
   setDragPos(mouseX, mouseY) {
@@ -163,16 +204,27 @@ class Card {
         return;
       }
     }
-    this.setPos(
-      mouseX / camera.scale + camera.x - this.dragData.offsetX * GRID_SIZE,
-      mouseY / camera.scale + camera.y - this.dragData.offsetY * GRID_SIZE
-    );
+    this.setPosFromMouse(mouseX, mouseY);
     if (this.selected) {
-      this.dragData.selected.forEach(card => card.setPos(
-        mouseX / camera.scale + camera.x - card.dragData.offsetX * GRID_SIZE,
-        mouseY / camera.scale + camera.y - card.dragData.offsetY * GRID_SIZE
-      ));
+      this.dragData.selected.forEach(card => card.setPosFromMouse(mouseX, mouseY));
     }
+  }
+
+  setInformation({name, mass, state, melting, type, ie, note}) {
+    const data = this.data;
+    name.innerHTML = `<strong>${data.symbol}</strong> &mdash; ${data.name}`;
+    mass.textContent = data.mass;
+    state.textContent = data.state;
+    melting.textContent = data.melting;
+    type.textContent = data.type;
+    ie.textContent = data.ie;
+    note.innerHTML = CHARACTERISTICS[data.note] || 'This element isn\'t very special :(';
+  }
+
+  reposition(x, y) {
+    this.parent.positions[Math.round(this.x / GRID_SIZE) + '.' + Math.round(this.y / GRID_SIZE)]--;
+    this.setPos(x * GRID_SIZE, y * GRID_SIZE);
+    this.snap();
   }
 
 }
@@ -255,6 +307,9 @@ function init([elements]) {
   const cardsWrapper = document.getElementById('cards');
   const mouseTooltip = document.getElementById('mouse-tooltip');
   const showBar = document.getElementById('show-bar');
+  const overlayCover = document.getElementById('overlay-cover');
+  const menu = document.getElementById('menu');
+  const savecode = document.getElementById('savecode');
 
   function touchMove(e) {
     Object.values(e.changedTouches).forEach(touch => {
@@ -303,6 +358,7 @@ function init([elements]) {
   const cardParent = {
     wrapper: cardsWrapper,
     fragment: document.createDocumentFragment(),
+    positions: {},
     touchDrags: {},
     touchScroller: null,
     touchListenersCreated: false,
@@ -325,6 +381,17 @@ function init([elements]) {
         card.selected = false;
         card.elem.classList.remove('selected');
       });
+    },
+    infoElems: {
+      overlayCover: overlayCover,
+      overlay: document.getElementById('element-info'),
+      name: document.getElementById('element-name'),
+      mass: document.getElementById('element-mass'),
+      state: document.getElementById('element-state'),
+      melting: document.getElementById('element-melting'),
+      type: document.getElementById('element-type'),
+      ie: document.getElementById('element-ie'),
+      note: document.getElementById('element-note')
     }
   };
   elements = elements.map(data => new Card(cardParent, data));
@@ -332,6 +399,7 @@ function init([elements]) {
   cardsWrapper.appendChild(cardParent.fragment);
 
   document.addEventListener('touchstart', e => {
+    if (!cardsWrapper.contains(e.target) && e.target !== document.body) return;
     const touch = e.changedTouches[0];
     if (!cardParent.touchDrags[touch.identifier]) {
       const initX = camera.x, initY = camera.y, initScale = camera.scale;
@@ -361,7 +429,7 @@ function init([elements]) {
             recalc(lastVals.x1 = mouseX, lastVals.y1 = mouseY, lastVals.x2, lastVals.y2);
           }
         };
-      } else if (options.multiple) {
+      } else if (options.multiple && options.multipleTouch) {
         cardParent.touchScroller = touch.identifier;
         cardParent.touchDrags[touch.identifier] = new SelectionBox(cardParent, touch.clientX, touch.clientY, null);
         cardParent.touchDrags[touch.identifier].scroll = true;
@@ -371,10 +439,18 @@ function init([elements]) {
         cardParent.touchScroller = touch.identifier;
         cardParent.touchDrags[touch.identifier] = {
           scroll: true,
+          dragging: false,
           paired: false,
           lastX: touch.clientX, lastY: touch.clientY,
           dx: 0, dy: 0,
           setDragPos(mouseX, mouseY) {
+            if (!this.dragging) {
+              if (compDist(touch.clientX - mouseX, touch.clientY - mouseY, DRAG_DIST) === 1) {
+                this.dragging = true;
+              } else {
+                return;
+              }
+            }
             if (mouseX - this.lastX === 0 && mouseY - this.lastY === 0) {
               camera.xv = -this.dx;
               camera.yv = -this.dy;
@@ -387,12 +463,19 @@ function init([elements]) {
             camera.y = initY + touch.clientY / initScale - (this.lastY = mouseY) / camera.scale;
           }
         };
+        if (options.multiple && options.multipleTouch) {
+          cardParent.touchDrags[touch.identifier].stopDragging = () => {
+            if (!cardParent.touchDrags[touch.identifier].dragging)
+              cardParent.clearSelection();
+          };
+        }
       }
       e.preventDefault();
       cardParent.createTouchListeners();
     }
   }, {passive: false});
   document.addEventListener('mousedown', e => {
+    if (!cardsWrapper.contains(e.target) && e.target !== document.body) return;
     if (!cardParent.mouseDrag) {
       if (options.multiple && e.shiftKey) {
         cardParent.mouseDrag = new SelectionBox(cardParent, e.clientX, e.clientY, null);
@@ -415,7 +498,7 @@ function init([elements]) {
             camera.y = initY + e.clientY / initScale - mouseY / camera.scale;
           }
         };
-        if (options.multiple) {
+        if (options.multiple && options.multipleTouch) {
           cardParent.mouseDrag.stopDragging = () => {
             if (!cardParent.mouseDrag.dragging)
               cardParent.clearSelection();
@@ -428,14 +511,20 @@ function init([elements]) {
   });
 
   elements.sort((a, b) => a.data.mass - b.data.mass).forEach((card, i) => {
-    card.setPos(i * GRID_SIZE, 0);
+    card.reposition(i, 0);
   });
 
   document.body.style.backgroundImage = `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='${GRID_SIZE}' height='${GRID_SIZE}' fill='none' stroke='rgba(0,0,0,0.3)' stroke-width='3'%3E%3Cpath d='M0 ${GRID_SIZE}H${GRID_SIZE}V0'/%3E%3C/svg%3E")`;
 
   document.addEventListener('touchstart', e => {
     mouseTooltip.classList.add('hidden');
-    options.multiple = false;
+    const toggleMultiple = document.getElementById('multiple-btn');
+    toggleMultiple.classList.remove('hidden');
+    toggleMultiple.addEventListener('click', e => {
+      options.multipleTouch = !options.multipleTouch;
+      if (options.multipleTouch) toggleMultiple.classList.add('multiple-active');
+      else toggleMultiple.classList.remove('multiple-active');
+    });
   }, {once: true});
 
   window.addEventListener('wheel', e => {
@@ -465,15 +554,35 @@ function init([elements]) {
     win.width = window.innerWidth;
   });
 
-  showBar.addEventListener('touchstart', e => {
-    e.stopPropagation();
-  });
-  showBar.addEventListener('mousedown', e => {
-    e.stopPropagation();
-  });
   showBar.addEventListener('click', e => {
     if (e.target.dataset.prop) {
       document.body.className = 'show-' + e.target.dataset.prop;
+    }
+  });
+
+  Array.from(document.getElementsByClassName('close')).forEach(closeBtn => closeBtn.addEventListener('click', e => {
+    closeBtn.parentNode.classList.remove('showing');
+    overlayCover.classList.remove('showing');
+  }));
+
+  document.getElementById('menu-btn').addEventListener('click', e => {
+    menu.classList.add('showing');
+    overlayCover.classList.add('showing');
+    const vals = ["approved by the sheep"];
+    elements.forEach(card => {
+      vals.push(Math.round(card.x / GRID_SIZE));
+      vals.push(Math.round(card.y / GRID_SIZE));
+    });
+    savecode.value = btoa(JSON.stringify(vals));
+  });
+  document.getElementById('load').addEventListener('click', e => {
+    try {
+      const vals = JSON.parse(atob(savecode.value).trim()).slice(1);
+      elements.forEach((card, i) => {
+        card.reposition(vals[i * 2], vals[i * 2 + 1]);
+      });
+    } catch (e) {
+      alert('there was a problem with your save code!');
     }
   });
 
