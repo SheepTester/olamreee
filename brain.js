@@ -607,7 +607,7 @@ function init([elements, metadata]) {
 
   window.addEventListener('wheel', e => {
     if (!cardsWrapper.contains(e.target) && e.target !== document.body) return;
-    if (e.ctrlKey) {
+    if (e.ctrlKey || e.metaKey) {
       const change = Math.abs(e.deltaY / 1000) + 1;
       const oldScale = camera.scale;
       let xDiff = -camera.x * oldScale - e.clientX, yDiff = -camera.y * oldScale - e.clientY;
@@ -650,7 +650,12 @@ function init([elements, metadata]) {
 
   function load(code) {
     try {
-      const vals = JSON.parse(atob(code).trim()).slice(1);
+      let vals = JSON.parse(atob(code).trim());
+      if (SOURCE === './olam' && vals[0] === 'approved by the sheep') {
+        const gmIndex = elements.findIndex(card => card.data.symbol === 'Gm');
+        vals.splice(gmIndex * 2 + 1, 0, 50, 0);
+      }
+      vals = vals.slice(1);
       cardParent.positions = {};
       elements.forEach((card, i) => {
         if (i * 2 >= vals.length) return;
@@ -658,11 +663,12 @@ function init([elements, metadata]) {
         card.toTop();
       });
     } catch (e) {
+      console.log(e);
       alert('there was a problem with your save code!');
     }
   }
   function save() {
-    const vals = ["approved by the sheep"];
+    const vals = ['sheep-approved'];
     elements.forEach(card => {
       vals.push(Math.round(card.x / GRID_SIZE));
       vals.push(Math.round(card.y / GRID_SIZE));
@@ -716,6 +722,8 @@ function init([elements, metadata]) {
   camera.x = -GRID_SIZE / 2;
   camera.y = -(win.height - GRID_SIZE) / 2 / camera.scale;
   paint();
+
+  window.brain = cardParent;
 }
 
 Promise.all([
