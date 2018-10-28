@@ -124,6 +124,7 @@ class Card {
       this.elem.classList.remove('stacked');
     }
     this.parent.positions[posStr]++;
+    this.snapped = true;
   }
 
   checkAutoScroll() {
@@ -139,7 +140,9 @@ class Card {
   becomeDragged() {
     this.elem.classList.add('dragged');
     this.elem.classList.remove('stacked');
-    this.parent.positions[Math.round(this.x / GRID_SIZE) + '.' + Math.round(this.y / GRID_SIZE)]--;
+    if (this.snapped)
+      this.parent.positions[Math.round(this.x / GRID_SIZE) + '.' + Math.round(this.y / GRID_SIZE)]--;
+    this.snapped = false;
   }
 
   startDragging() {
@@ -274,6 +277,7 @@ class SelectionBox {
     elem.style.height = (maxY - minY) + 'px';
     elem.style.transform = `translate(${minX}px, ${minY}px)`;
     this.state = [minX, minY, maxX, maxY];
+    this.parent.statusText.textContent = (Math.ceil(maxX / GRID_SIZE) - Math.floor(minX / GRID_SIZE)) + ' by ' + (Math.ceil(maxY / GRID_SIZE) - Math.floor(minY / GRID_SIZE));
   }
 
   stopDragging() {
@@ -284,6 +288,8 @@ class SelectionBox {
         this.clickTarget.selected = !this.clickTarget.selected;
         if (this.clickTarget.selected) this.clickTarget.elem.classList.add('selected');
         else this.clickTarget.elem.classList.remove('selected');
+        const selectedCount = this.parent.elements.filter(card => card.selected).length;
+        this.parent.statusText.textContent = selectedCount ? selectedCount + ' element(s) selected' : '';
       } else {
         this.parent.clearSelection();
       }
@@ -297,6 +303,7 @@ class SelectionBox {
       card.selected = setTo;
       setTo ? card.elem.classList.add('selected') : card.elem.classList.remove('selected');
     });
+    this.parent.statusText.textContent = this.parent.elements.filter(card => card.selected).length + ' element(s) selected';
   }
 
   cancel() {
@@ -387,6 +394,7 @@ function init([elements]) {
         card.selected = false;
         card.elem.classList.remove('selected');
       });
+      this.statusText.textContent = '';
     },
     infoElems: {
       overlayCover: overlayCover,
@@ -398,7 +406,8 @@ function init([elements]) {
       type: document.getElementById('element-type'),
       ie: document.getElementById('element-ie'),
       note: document.getElementById('element-note')
-    }
+    },
+    statusText: document.getElementById('status')
   };
   elements = elements.map(data => new Card(cardParent, data));
   cardParent.elements = elements;
