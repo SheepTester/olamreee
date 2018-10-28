@@ -632,6 +632,9 @@ function init([elements]) {
     autosave.disabled = true;
     autosave.textContent = 'autosave on';
   });
+  document.getElementById('save').addEventListener('click', e => {
+    localStorage.setItem(COOKIE_NAME, save());
+  });
   document.getElementById('load').addEventListener('click', e => {
     load(savecode.value);
   });

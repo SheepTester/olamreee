@@ -252,6 +252,7 @@ code {
   left: 0;
 }
 .multiple-active, #menu-btn:focus {
+  outline: none;
   background-color: #48aaeb;
   color: white;
 }
