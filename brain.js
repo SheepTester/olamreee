@@ -1,11 +1,46 @@
-const SOURCE = window.location.search === '?main-group' ? './main-group' : './olam';
+// URL PARAMETERS
+// source - where to load JSON data from
+// room   - live editing room ID
+// key    - localStorage name for the save code
+// code   - the code to load (+: -; =: _)
+// show   - filter to show by default
+const params = {};
+if (window.location.search) {
+  window.location.search.slice(1).split('&').forEach(entry => {
+    const equalSignLoc = entry.indexOf('=');
+    if (~equalSignLoc) {
+      params[entry.slice(0, equalSignLoc)] = entry.slice(equalSignLoc + 1);
+    } else {
+      params[entry] = true;
+    }
+  });
+}
+
+const SOURCE = params.source ? params.source : './olam';
+
+let multiplayerScriptTag;
+if (params.room) {
+  window.TogetherJSConfig_siteName = 'OlamREEE';
+  window.TogetherJSConfig_toolName = 'Happy Sheep Collaboration Tool';
+  window.TogetherJSConfig_dontShowClicks = true;
+  window.TogetherJSConfig_findRoom = params.room;
+  window.TogetherJSConfig_autoStart = true;
+  window.TogetherJSConfig_suppressJoinConfirmation = true;
+  window.TogetherJSConfig_suppressInvite = true;
+  window.TogetherJSConfig_youtube = false;
+  window.TogetherJSConfig_ignoreMessages = true;
+  window.TogetherJSConfig_ignoreForms = true;
+  multiplayerScriptTag = document.createElement('script');
+  multiplayerScriptTag.src = 'https://togetherjs.com/togetherjs-min.js';
+  document.head.appendChild(multiplayerScriptTag);
+}
 
 const GRID_SIZE = 150;
 const SCROLL_THRESHOLD = GRID_SIZE * 100;
 const AUTO_SCROLL_SPEED = 10;
 const DRAG_DIST = 4;
-const GRID_URL = `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='${GRID_SIZE}' height='${GRID_SIZE}' fill='none' stroke='rgba(0,0,0,0.3)' stroke-width='3'%3E%3Cpath d='M0 ${GRID_SIZE}H${GRID_SIZE}V0'/%3E%3C/svg%3E")`;
-const COOKIE_NAME = '[olamreee] savecode' + SOURCE;
+const GRID_URL = `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='${GRID_SIZE}' height='${GRID_SIZE}' fill='none' stroke='rgba(0,0,0,0.2)' stroke-width='2'%3E%3Cpath d='M0 0V${GRID_SIZE}H${GRID_SIZE}V0z'/%3E%3C/svg%3E")`;
+const COOKIE_NAME = params.key ? '[olamreee] savecode.custom.' + params.key : '[olamreee] savecode' + SOURCE;
 
 const options = {
   showGrid: true,
@@ -120,21 +155,11 @@ class Card {
     this.snapped = true;
   }
 
-  checkAutoScroll() {
-    if (!this.dragging) return;
-    let diffX = 0, diffY = 0;
-    if (this.x - win.scrollX < GRID_SIZE / 2) window.scrollBy(diffX = -AUTO_SCROLL_SPEED, 0);
-    else if (this.x - win.scrollX > win.width - GRID_SIZE * 1.5) window.scrollBy(diffX = AUTO_SCROLL_SPEED, 0);
-    if (this.y - win.scrollY < GRID_SIZE / 2) window.scrollBy(0, diffY = -AUTO_SCROLL_SPEED);
-    else if (this.y - win.scrollY > win.height - GRID_SIZE * 1.5) window.scrollBy(0, diffY = AUTO_SCROLL_SPEED);
-    this.setPos(this.x + diffX, this.y + diffY);
-  }
-
   becomeDragged() {
     this.elem.classList.add('dragged');
     this.elem.classList.remove('stacked');
     if (this.snapped)
-      this.parent.positions[Math.round(this.x / GRID_SIZE) + '.' + Math.round(this.y / GRID_SIZE)]--;
+      this.parent.positions[this.getIntPos(true)]--;
     this.snapped = false;
   }
 
@@ -159,11 +184,18 @@ class Card {
       this.parent.infoElems.overlay.classList.add('showing');
       this.setInformation(this.parent.infoElems);
     }
-    const selected = this.dragData.selected;
+    const selected = this.dragData.selected || [];
     const dragging = this.dragData.dragging;
     this.becomeDropped(dragging);
     if (this.selected) {
       selected.forEach(card => card.becomeDropped(dragging));
+    }
+    if (this.parent.multiplayer) {
+      this.parent.newPositions([this, ...selected].map(card => {
+        const obj = {symbol: card.data.symbol};
+        [obj.x, obj.y] = card.getIntPos(false);
+        return obj;
+      }));
     }
   }
 
@@ -222,7 +254,17 @@ class Card {
     });
   }
 
-  reposition(x, y) {
+  getIntPos(strNotation) {
+    const x = Math.round(this.x / GRID_SIZE);
+    const y = Math.round(this.y / GRID_SIZE);
+    if (strNotation) return x + '.' + y;
+    else return [x, y];
+  }
+
+  reposition(x, y, move = false) {
+    if (move && this.snapped) {
+      this.parent.positions[this.getIntPos(true)]--;
+    }
     this.setPos(x * GRID_SIZE, y * GRID_SIZE);
     this.snap();
   }
@@ -283,8 +325,7 @@ class SelectionBox {
         this.clickTarget.selected = !this.clickTarget.selected;
         if (this.clickTarget.selected) this.clickTarget.elem.classList.add('selected');
         else this.clickTarget.elem.classList.remove('selected');
-        const selectedCount = this.parent.elements.filter(card => card.selected).length;
-        this.parent.statusText.textContent = selectedCount ? selectedCount + ' element(s) selected' : '';
+        this.parent.updateSelectionStatus();
       } else {
         this.parent.clearSelection();
       }
@@ -298,8 +339,7 @@ class SelectionBox {
       card.selected = setTo;
       setTo ? card.elem.classList.add('selected') : card.elem.classList.remove('selected');
     });
-    const selectedCount = this.parent.elements.filter(card => card.selected).length;
-    this.parent.statusText.textContent = selectedCount ? selectedCount + ' element(s) selected' : '';
+    this.parent.updateSelectionStatus();
   }
 
   cancel() {
@@ -309,7 +349,7 @@ class SelectionBox {
 
 }
 
-function init([elements, metadata]) {
+function init([elements, metadata, , multiplayer]) {
   const gridLines = document.getElementById('gridlines');
   const cardsWrapper = document.getElementById('cards');
   const mouseTooltip = document.getElementById('mouse-tooltip');
@@ -319,6 +359,15 @@ function init([elements, metadata]) {
   const savecode = document.getElementById('savecode');
   const gridToggler = document.getElementById('grid-toggle');
   const snapToggler = document.getElementById('snap-toggle');
+  const urlRoom = document.getElementById('url-room');
+  const urlSource = document.getElementById('url-source');
+  const urlKey = document.getElementById('url-key');
+  const urlShow = document.getElementById('url-show');
+  const generateURL = document.getElementById('gen-url');
+
+  generateURL.addEventListener('click', e => {
+    window.location = `?room=${urlRoom.value}&source=${urlSource.value}&key=${urlKey.value}&show=${urlShow.value}`;
+  });
 
   const defaultSort = metadata._DEFAULT_SORT_;
   delete metadata._DEFAULT_SORT_;
@@ -383,6 +432,7 @@ function init([elements, metadata]) {
   const style = document.createElement('style');
   style.innerHTML = css;
   document.head.appendChild(style);
+  if (params.show) document.body.classList.add('show-' + params.show);
 
   function touchMove(e) {
     Object.values(e.changedTouches).forEach(touch => {
@@ -453,11 +503,22 @@ function init([elements, metadata]) {
         card.selected = false;
         card.elem.classList.remove('selected');
       });
-      this.statusText.textContent = '';
+      this.updateSelectionStatus();
     },
     infoElems: infoElems,
     metadata: metadata,
-    statusText: document.getElementById('status')
+    statusText: document.getElementById('status'),
+    updateSelectionStatus() {
+      const selected = this.elements.filter(card => card.selected);
+      this.statusText.textContent = selected.length ? selected.length + ' element(s) selected' : '';
+      if (multiplayer) {
+        TogetherJS.send({type: 'reselect', selected: selected.map(card => card.data.symbol)});
+      }
+    },
+    multiplayer: multiplayer,
+    newPositions(positions) {
+      TogetherJS.send({type: 'move', positions: positions});
+    }
   };
   elements = elements.map(data => new Card(cardParent, data));
   cardParent.elements = elements;
@@ -665,7 +726,7 @@ function init([elements, metadata]) {
       });
     } catch (e) {
       console.log(e);
-      alert('there was a problem with your save code!');
+      alert('There was a problem with your save code! Please send it to Sean, and he might be able to fix it.');
     }
   }
   function save() {
@@ -676,7 +737,9 @@ function init([elements, metadata]) {
     });
     return btoa(JSON.stringify(vals));
   }
-  if (localStorage.getItem(COOKIE_NAME))
+  if (params.code)
+    load(params.code.replace(/_/g, '=').replace(/-/g, '+'));
+  else if (localStorage.getItem(COOKIE_NAME))
     load(localStorage.getItem(COOKIE_NAME));
   document.getElementById('menu-btn').addEventListener('click', e => {
     menu.classList.add('showing');
@@ -715,8 +778,6 @@ function init([elements, metadata]) {
     document.body.style.backgroundPosition = `${-(camera.x % GRID_SIZE) * camera.scale}px ${-(camera.y % GRID_SIZE) * camera.scale}px`;
     document.body.style.backgroundSize = GRID_SIZE * camera.scale + 'px';
 
-    // if (cardParent.mouseDrag) cardParent.mouseDrag.checkAutoScroll();
-
     window.requestAnimationFrame(paint);
   }
   camera.scale = 0.5;
@@ -724,11 +785,51 @@ function init([elements, metadata]) {
   camera.y = -(win.height - GRID_SIZE) / 2 / camera.scale;
   paint();
 
+  if (multiplayer) {
+    const selectHighlightStyle = document.createElement('style');
+    document.head.insertBefore(selectHighlightStyle, document.head.firstChild);
+    function userIDtoClass(userID) {
+      return 'q' + userID.toLowerCase().replace(/^[0-9]|[^0-9a-z-]/g, '-');
+    }
+    TogetherJS.hub.on('load-entire-thing', msg => {
+      if (!msg.sameUrl) return;
+      load(msg.code);
+    });
+    TogetherJS.hub.on('move', msg => {
+      if (!msg.sameUrl) return;
+      const positions = msg.positions;
+      positions.forEach(({symbol, x, y}) => {
+        const element = elements.find(card => card.data.symbol === symbol);
+        element.reposition(x, y, true);
+        element.toTop();
+      });
+    });
+    TogetherJS.hub.on('reselect', msg => {
+      if (!msg.sameUrl) return;
+      const user = userIDtoClass(msg.peer.id);
+      Array.from(document.getElementsByClassName(user)).forEach(card => card.classList.remove(user));
+      msg.selected.forEach(symbol => {
+        elements.find(card => card.data.symbol === symbol).elem.classList.add(user);
+      });
+    });
+    TogetherJS.hub.on('togetherjs.hello', msg => {
+      if (!msg.sameUrl) return;
+      selectHighlightStyle.innerHTML += `.${userIDtoClass(msg.clientId)}{box-shadow:0 0 20px ${msg.color},inset 0 0 10px ${msg.color};}`;
+      TogetherJS.send({type: 'load-entire-thing', code: save()});
+      TogetherJS.send({type: 'hi-i-also-exist'});
+    });
+    TogetherJS.hub.on('hi-i-also-exist', msg => {
+      if (!msg.sameUrl) return;
+      selectHighlightStyle.innerHTML += `.${userIDtoClass(msg.peer.id)}{box-shadow:0 0 20px ${msg.peer.color},inset 0 0 10px ${msg.peer.color};}`;
+    });
+  }
+
   window.brain = cardParent;
 }
 
 Promise.all([
   fetch(`${SOURCE}.json`).then(res => res.json()),
   fetch(`${SOURCE}-metadata.json`).then(res => res.json()),
-  new Promise(res => document.addEventListener('DOMContentLoaded', res, {once: true}))
+  new Promise(res => document.addEventListener('DOMContentLoaded', res, {once: true})),
+  params.room && new Promise(res => multiplayerScriptTag.onload = res)
 ]).then(init);
