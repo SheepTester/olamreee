@@ -313,3 +313,7 @@ a {
   pointer-events: none;
   margin: 20px 0;
 }
+
+.togetherjs-cursor {
+  display: none;
+}
