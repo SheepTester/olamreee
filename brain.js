@@ -298,7 +298,8 @@ class SelectionBox {
       card.selected = setTo;
       setTo ? card.elem.classList.add('selected') : card.elem.classList.remove('selected');
     });
-    this.parent.statusText.textContent = this.parent.elements.filter(card => card.selected).length + ' element(s) selected';
+    const selectedCount = this.parent.elements.filter(card => card.selected).length;
+    this.parent.statusText.textContent = selectedCount ? selectedCount + ' element(s) selected' : '';
   }
 
   cancel() {
