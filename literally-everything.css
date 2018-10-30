@@ -5,11 +5,47 @@ html, body, #overlay-cover {
 }
 body {
   margin: 0;
-  background-color: #eee;
-  color: rgba(0, 0, 0, 0.8);
+  background-color: var(--background);
+  color: var(--color);
   --card-size: 150px;
   overflow: hidden;
   position: relative;
+}
+
+body.light {
+  --background: #eee;
+  --tooltip-back: rgba(255, 255, 255, 0.8);
+  --btn-back: #ddd;
+  --btn-border: #aaa;
+  --overlay: rgba(255, 255, 255, 0.8);
+  --color: rgba(0, 0, 0, 0.8);
+  --focus: #48aaeb;
+  --focus-border: #2395e1;
+  --show-bar-back: rgba(255, 255, 255, 0.8);
+  --show-bar-btn-back: #ddd;
+  --show-bar-btn-border: #aaa;
+  --close: #888;
+  --input: rgba(0, 0, 0, 0.05);
+  --floating-btn: white;
+  --link: black;
+}
+
+body.dark {
+  --background: #2C2F33;
+  --tooltip-back: #18191C;
+  --btn-back: #2C2F33;
+  --btn-border: #23272A;
+  --overlay: rgba(62, 62, 68, 0.75);
+  --color: white;
+  --focus: #626268;
+  --focus-border: #757882;
+  --show-bar-back: #23272A;
+  --show-bar-btn-back: #323539;
+  --show-bar-btn-border: #212121;
+  --close: #888;
+  --input: rgba(0, 0, 0, 0.05);
+  --floating-btn: #18191C;
+  --link: white;
 }
 
 .card, .tooltip, button {
@@ -27,6 +63,7 @@ body {
   left: 0;
 }
 .card {
+  color: rgba(0, 0, 0, 0.8);
   position: absolute;
   top: 0;
   left: 0;
@@ -78,6 +115,15 @@ body.show-name .symbol {
   width: 0;
   height: 0;
 }
+.note {
+  background-color: transparent;
+  border-color: currentColor;
+  text-align: center;
+  color: inherit;
+}
+.note span {
+  font-size: 150px;
+}
 
 .znote-unreactivemetal .znote { /* hardcoded exception oh well */
   font-size: 20px;
@@ -90,7 +136,7 @@ body.show-name .symbol {
   left: 0;
   margin: 10px;
   padding: 10px;
-  background-color: rgba(255, 255, 255, 0.8);
+  background-color: var(--tooltip-back);
   opacity: 0.5;
   animation: pop-in 3.25s, fade-out-forever .2s 13s forwards;
   border-radius: 5px;
@@ -102,9 +148,9 @@ body.show-name .symbol {
   margin: 0.5em 0;
 }
 code {
-  background-color: #ddd;
+  background-color: var(--btn-back);
   padding: 1px 3px;
-  border-bottom: 3px solid #aaa;
+  border-bottom: 3px solid var(--btn-border);
 }
 @keyframes pop-in {
   0% { opacity: 1; }
@@ -122,7 +168,7 @@ code {
   left: 0;
   width: 100%;
   font-size: 0;
-  background-color: rgba(255, 255, 255, 0.8);
+  background-color: var(--show-bar-back);
   box-shadow: 0 0 3px rgba(0, 0, 0, 0.3);
   padding: 10px;
   white-space: nowrap;
@@ -136,8 +182,8 @@ code {
   margin: 10px;
   border: none;
   background: none;
-  background-color: #ddd;
-  border-bottom: 3px solid #aaa;
+  background-color: var(--show-bar-btn-back);
+  border-bottom: 3px solid var(--show-bar-btn-border);
   font: inherit;
   font-size: 18px;
   color: inherit;
@@ -146,12 +192,12 @@ code {
 }
 #show-bar button:active, .menu-btn:active {
   border-bottom: none;
-  border-top: 3px solid #aaa;
+  border-top: 3px solid var(--show-bar-btn-border);
 }
 #show-bar button:focus, .menu-btn:focus {
   outline: none;
-  background-color: #48aaeb;
-  border-color: #2395e1;
+  background-color: var(--focus);
+  border-color: var(--focus-border);
   color: white;
 }
 #show-bar button:disabled, .menu-btn:disabled {
@@ -167,7 +213,7 @@ code {
   padding: 20px;
   border: none;
   background: none;
-  background-color: white;
+  background-color: var(--floating-btn);
   cursor: pointer;
   font: inherit;
   color: inherit;
@@ -178,7 +224,7 @@ code {
 }
 .multiple-active, #menu-btn:focus {
   outline: none;
-  background-color: #48aaeb;
+  background-color: var(--focus);
   color: white;
 }
 #menu-btn {
@@ -189,7 +235,7 @@ code {
   position: fixed;
   top: 0;
   left: 0;
-  background-color: rgba(255, 255, 255, 0.8);
+  background-color: var(--overlay);
   pointer-events: none;
   opacity: 0;
   transition: all .5s;
@@ -255,7 +301,7 @@ code {
 .close {
   border: none;
   background: none;
-  color: #888;
+  color: var(--close);
   cursor: pointer;
   text-decoration: underline;
   font: inherit;
@@ -264,17 +310,18 @@ code {
   padding: 10px;
 }
 
-#savecode, input {
+textarea, input {
   vertical-align: middle;
   border: none;
-  background-color: rgba(0, 0, 0, 0.05);
+  background-color: var(--input);
   border-radius: 5px;
   box-sizing: border-box;
   font: inherit;
   font-size: 14px;
   font-family: monospace;
+  color: inherit;
 }
-#savecode {
+textarea {
   width: 100%;
   height: 140px;
   padding: 10px;
@@ -290,8 +337,8 @@ input {
   margin-right: 10px;
   border: none;
   background: none;
-  background-color: #ddd;
-  border-bottom: 3px solid #aaa;
+  background-color: var(--btn-back);
+  border-bottom: 3px solid var(--btn-border);
   font: inherit;
   font-size: 18px;
   color: inherit;
@@ -299,7 +346,7 @@ input {
   border-radius: 5px;
 }
 a {
-  color: black;
+  color: var(--link);
 }
 
 #status {

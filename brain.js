@@ -78,27 +78,14 @@ function classnameify(value) {
 
 class Card {
 
-  constructor(parent, data) {
+  constructor(parent) {
     this.parent = parent;
-    this.data = data;
     this.x = 0, this.y = 0;
     this.dragData = null;
     this.selected = false;
     const elem = document.createElement('div');
-    this.elem = elem;
-    const metadata = parent.metadata;
-    let innerHTML = `<span class="name">${data.name}</span><span class="symbol">${data.symbol}</span>`;
-    Object.keys(metadata).forEach(prop => {
-      if (data[prop] === undefined) return;
-      if (metadata[prop].key.type === 'range') {
-        elem.style.setProperty('--' + prop, colourScales[prop](data[prop]).css());
-      } else {
-        elem.classList.add(`z${prop}-${classnameify(data[prop])}`);
-      }
-      innerHTML += `<span class="z${prop}">${data[prop]}</span>`;
-    });
-    elem.innerHTML = innerHTML;
     elem.classList.add('card');
+    this.elem = elem;
     elem.addEventListener('touchstart', e => {
       const touch = e.changedTouches[0];
       if (options.multiple && options.multipleTouch) {
@@ -159,7 +146,7 @@ class Card {
     this.elem.classList.add('dragged');
     this.elem.classList.remove('stacked');
     if (this.snapped)
-      this.parent.positions[this.getIntPos(true)]--;
+      this.unposition();
     this.snapped = false;
   }
 
@@ -178,11 +165,13 @@ class Card {
     this.dragData = null;
   }
 
+  handleClick() {
+    return;
+  }
+
   stopDragging() {
     if (!this.dragData.dragging) {
-      this.parent.infoElems.overlayCover.classList.add('showing');
-      this.parent.infoElems.overlay.classList.add('showing');
-      this.setInformation(this.parent.infoElems);
+      this.handleClick();
     }
     const selected = this.dragData.selected || [];
     const dragging = this.dragData.dragging;
@@ -192,7 +181,7 @@ class Card {
     }
     if (this.parent.multiplayer) {
       this.parent.newPositions([this, ...selected].map(card => {
-        const obj = {symbol: card.data.symbol};
+        const obj = {identifier: card.identifier};
         [obj.x, obj.y] = card.getIntPos(false);
         return obj;
       }));
@@ -213,7 +202,7 @@ class Card {
     this.dragData.initX = mouseX;
     this.dragData.initY = mouseY;
     if (this.selected) {
-      const selected = this.parent.elements.filter(card => card.selected && card !== this);
+      const selected = this.parent.cards.filter(card => card.selected && card !== this);
       selected.forEach(card => card.fillDropData(mouseX, mouseY));
       this.dragData.selected = selected;
     }
@@ -241,6 +230,51 @@ class Card {
     }
   }
 
+  getIntPos(strNotation) {
+    const x = Math.round(this.x / GRID_SIZE);
+    const y = Math.round(this.y / GRID_SIZE);
+    if (strNotation) return x + '.' + y;
+    else return [x, y];
+  }
+
+  reposition(x, y, move = false) {
+    if (move && this.snapped) {
+      this.unposition();
+    }
+    this.setPos(x * GRID_SIZE, y * GRID_SIZE);
+    this.snap();
+  }
+
+  unposition() {
+    const pos = this.getIntPos(true);
+    this.parent.positions[pos]--;
+    this.parent.cards.find(card => card.getIntPos(true) === pos).elem.classList.remove('stacked');
+  }
+
+}
+
+class ElementCard extends Card {
+
+  constructor(parent, data) {
+    super(parent);
+
+    this.data = data;
+    const metadata = parent.metadata;
+    const elem = this.elem;
+    let innerHTML = `<span class="name">${data.name}</span><span class="symbol">${data.symbol}</span>`;
+    Object.keys(metadata).forEach(prop => {
+      if (data[prop] === undefined) return;
+      if (metadata[prop].key.type === 'range') {
+        elem.style.setProperty('--' + prop, colourScales[prop](data[prop]).css());
+      } else {
+        elem.classList.add(`z${prop}-${classnameify(data[prop])}`);
+      }
+      innerHTML += `<span class="z${prop}">${data[prop]}</span>`;
+    });
+    elem.innerHTML = innerHTML;
+    this.identifier = this.data.symbol;
+  }
+
   setInformation(infoElems) {
     const data = this.data;
     const metadata = this.parent.metadata;
@@ -254,19 +288,43 @@ class Card {
     });
   }
 
-  getIntPos(strNotation) {
-    const x = Math.round(this.x / GRID_SIZE);
-    const y = Math.round(this.y / GRID_SIZE);
-    if (strNotation) return x + '.' + y;
-    else return [x, y];
+  handleClick() {
+    this.parent.openOverlay(this.parent.infoElems.overlay);
+    this.setInformation(this.parent.infoElems);
   }
 
-  reposition(x, y, move = false) {
-    if (move && this.snapped) {
-      this.parent.positions[this.getIntPos(true)]--;
-    }
-    this.setPos(x * GRID_SIZE, y * GRID_SIZE);
-    this.snap();
+}
+
+class NoteCard extends Card {
+
+  constructor(parent, noteContent = '') {
+    super(parent);
+
+    this.noteContent = noteContent;
+    const asterisk = document.createElement('span');
+    asterisk.textContent = '*';
+    this.elem.appendChild(asterisk);
+    this.elem.classList.add('note');
+
+    parent.notes.push(this);
+    parent.wrapper.appendChild(this.elem);
+  }
+
+  handleClick() {
+    this.parent.openOverlay(this.parent.infoElems.noteOverlay);
+    this.parent.infoElems.noteContent.value = this.noteContent;
+    this.parent.editingNote = this;
+  }
+
+  get identifier() {
+    return '--' + this.noteContent;
+  }
+
+  poof() {
+    this.unposition();
+    this.parent.wrapper.removeChild(this.elem);
+    const index = this.parent.notes.indexOf(this);
+    if (~index) this.parent.notes.splice(index, 1);
   }
 
 }
@@ -333,7 +391,7 @@ class SelectionBox {
     }
     const setTo = this.setTo;
     const [minX, minY, maxX, maxY] = this.state.map((n, i) => (i < 2 ? Math.floor : Math.ceil)(n / GRID_SIZE) * GRID_SIZE);
-    this.parent.elements.filter(card =>
+    this.parent.cards.filter(card =>
       (setTo ? !card.selected : card.selected) && card.x >= minX && card.y >= minY && card.x < maxX && card.y < maxY)
     .forEach(card => {
       card.selected = setTo;
@@ -364,6 +422,7 @@ function init([elements, metadata, , multiplayer]) {
   const urlKey = document.getElementById('url-key');
   const urlShow = document.getElementById('url-show');
   const generateURL = document.getElementById('gen-url');
+  const noteEditor = document.getElementById('note-content');
 
   if (params.room) urlRoom.value = params.room;
   if (params.source) urlSource.value = params.source;
@@ -378,7 +437,9 @@ function init([elements, metadata, , multiplayer]) {
   const infoElems = {
     overlayCover: overlayCover,
     overlay: document.getElementById('element-info'),
-    name: document.getElementById('element-name')
+    name: document.getElementById('element-name'),
+    noteOverlay: document.getElementById('note-editor'),
+    noteContent: noteEditor
   };
   showBar.appendChild(createFragment(Object.keys(metadata).map(prop => {
     const btn = document.createElement('button');
@@ -413,7 +474,7 @@ function init([elements, metadata, , multiplayer]) {
     const colourKey = metadata[prop].key;
     if (colourKey.type === 'range') {
       colourScales[prop] = chroma.scale(colourKey.colours).domain(colourKey.domain);
-      css += `body.show-${prop} .card {
+      css += `.show-${prop} .card {
         background-color: var(--${prop});
       }`;
       if (colourKey.default) {
@@ -421,22 +482,54 @@ function init([elements, metadata, , multiplayer]) {
       }
     } else if (colourKey.type === 'individual') {
       if (colourKey.default) {
-        css += `body.show-${prop} .card{background-color:${colourKey.default};}`;
+        css += `.show-${prop} .card{background-color:${colourKey.default};}`;
       }
       Object.keys(colourKey.colours).forEach(val => {
-        css += `body.show-${prop} .z${prop}-${classnameify(val)} {
+        css += `.show-${prop} .z${prop}-${classnameify(val)} {
           background-color: ${colourKey.colours[val]};
         }`;
       });
     }
-    css += `body.show-${prop} .z${prop} {
+    css += `.show-${prop} .z${prop} {
       display: block;
     }`;
   });
   const style = document.createElement('style');
   style.innerHTML = css;
   document.head.appendChild(style);
-  if (params.show) document.body.classList.add('show-' + params.show);
+  if (params.show) cardsWrapper.classList.add('show-' + params.show);
+
+  noteEditor.addEventListener('change', e => {
+    if (cardParent.editingNote) {
+      const note = cardParent.editingNote;
+      if (multiplayer) {
+        TogetherJS.send({
+          type: 'note-edit',
+          x: note.x,
+          y: note.y,
+          oldContent: cardParent.editingNote.noteContent,
+          newContent: noteEditor.value
+        });
+      }
+      cardParent.editingNote.noteContent = noteEditor.value;
+    }
+  });
+  document.getElementById('remove-note').addEventListener('click', e => {
+    if (cardParent.editingNote) {
+      const note = cardParent.editingNote;
+      if (multiplayer) {
+        TogetherJS.send({
+          type: 'note-poof',
+          x: note.x,
+          y: note.y,
+          content: cardParent.editingNote.noteContent
+        });
+      }
+      note.poof();
+      cardParent.editingNote = null;
+      cardParent.closeOverlay(cardParent.infoElems.noteOverlay);
+    }
+  });
 
   function touchMove(e) {
     Object.values(e.changedTouches).forEach(touch => {
@@ -503,7 +596,7 @@ function init([elements, metadata, , multiplayer]) {
       document.addEventListener('mouseup', mouseEnd);
     },
     clearSelection() {
-      this.elements.filter(card => card.selected).forEach(card => {
+      this.cards.filter(card => card.selected).forEach(card => {
         card.selected = false;
         card.elem.classList.remove('selected');
       });
@@ -513,18 +606,39 @@ function init([elements, metadata, , multiplayer]) {
     metadata: metadata,
     statusText: document.getElementById('status'),
     updateSelectionStatus() {
-      const selected = this.elements.filter(card => card.selected);
+      const selected = this.cards.filter(card => card.selected);
       this.statusText.textContent = selected.length ? selected.length + ' element(s) selected' : '';
       if (multiplayer) {
-        TogetherJS.send({type: 'reselect', selected: selected.map(card => card.data.symbol)});
+        TogetherJS.send({type: 'reselect', selected: selected.map(card => card.identifier)});
       }
     },
     multiplayer: multiplayer,
     newPositions(positions) {
       TogetherJS.send({type: 'move', positions: positions});
+    },
+    notes: [],
+    editingNote: null,
+    openOverlay(overlay) {
+      overlayCover.classList.add('showing');
+      overlay.classList.add('showing');
+      [...overlay.getElementsByTagName('input'), ...overlay.getElementsByTagName('textarea'), ...overlay.getElementsByTagName('button'), ...overlay.getElementsByTagName('a')]
+        .forEach(elem => elem.removeAttribute('tabindex'));
+    },
+    closeOverlay(overlay) {
+      overlayCover.classList.remove('showing');
+      overlay.classList.remove('showing');
+      if (document.activeElement !== document.body)
+        document.activeElement.blur();
+      [...overlay.getElementsByTagName('input'), ...overlay.getElementsByTagName('textarea'), ...overlay.getElementsByTagName('button'), ...overlay.getElementsByTagName('a')]
+        .forEach(elem => elem.setAttribute('tabindex', '-1'));
+    },
+    get cards() {
+      return [...this.elements, ...this.notes];
     }
   };
-  elements = elements.map(data => new Card(cardParent, data));
+  document.querySelectorAll('.overlay input, .overlay textarea, .overlay button, .overlay a')
+    .forEach(elem => elem.setAttribute('tabindex', '-1'));
+  elements = elements.map(data => new ElementCard(cardParent, data));
   cardParent.elements = elements;
   cardsWrapper.appendChild(createFragment(elements.map(card => card.elem)));
 
@@ -626,14 +740,19 @@ function init([elements, metadata, , multiplayer]) {
             }
             camera.x = initX + e.clientX / initScale - mouseX / camera.scale;
             camera.y = initY + e.clientY / initScale - mouseY / camera.scale;
+          },
+          stopDragging(...args) {
+            if (!this.dragging && (e.ctrlKey || e.metaKey)) {
+              const x = Math.floor((e.clientX / camera.scale + camera.x) / GRID_SIZE);
+              const y = Math.floor((e.clientY / camera.scale + camera.y) / GRID_SIZE);
+              const note = new NoteCard(cardParent);
+              note.reposition(x, y);
+              if (multiplayer) {
+                TogetherJS.send({type: 'note-new', x: note.x, y: note.y});
+              }
+            }
           }
         };
-        if (options.multiple && options.multipleTouch) {
-          cardParent.mouseDrag.stopDragging = () => {
-            if (!cardParent.mouseDrag.dragging)
-              cardParent.clearSelection();
-          };
-        }
         e.preventDefault();
         cardParent.createMouseListeners();
       }
@@ -705,24 +824,35 @@ function init([elements, metadata, , multiplayer]) {
 
   showBar.addEventListener('click', e => {
     if (e.target.dataset.prop) {
-      document.body.className = 'show-' + e.target.dataset.prop;
+      cardsWrapper.className = 'show-' + e.target.dataset.prop;
     }
   });
 
   Array.from(document.getElementsByClassName('close')).forEach(closeBtn => closeBtn.addEventListener('click', e => {
-    closeBtn.parentNode.classList.remove('showing');
-    overlayCover.classList.remove('showing');
+    cardParent.closeOverlay(closeBtn.parentNode);
   }));
 
   function load(code) {
     try {
       let vals = JSON.parse(atob(code).trim());
-      if (SOURCE === './olam' && vals[0] === 'approved by the sheep') {
-        const gmIndex = elements.findIndex(card => card.data.symbol === 'Gm');
-        vals.splice(gmIndex * 2 + 1, 0, 50, 0);
+      if (SOURCE === './olam') {
+        switch (vals[0]) {
+          case 'approved by the sheep':
+            const gmIndex = elements.findIndex(card => card.data.symbol === 'Gm');
+            vals.splice(gmIndex * 2 + 1, 0, 50, 0);
+          case 'sheep-approved':
+            vals.splice(1, 0, []);
+            break;
+        }
       }
-      vals = vals.slice(1);
+      const notes = vals[1];
+      vals = vals.slice(2);
       cardParent.positions = {};
+      [...cardParent.notes].forEach(note => note.poof());
+      notes.forEach(([content, x, y]) => {
+        const note = new NoteCard(cardParent, content);
+        note.reposition(x, y);
+      });
       elements.forEach((card, i) => {
         if (i * 2 >= vals.length) return;
         card.reposition(vals[i * 2], vals[i * 2 + 1]);
@@ -734,10 +864,12 @@ function init([elements, metadata, , multiplayer]) {
     }
   }
   function save() {
-    const vals = ['sheep-approved'];
+    const vals = [
+      'happy sheep',
+      cardParent.notes.map(note => [note.noteContent, ...note.getIntPos(false)])
+    ];
     elements.forEach(card => {
-      vals.push(Math.round(card.x / GRID_SIZE));
-      vals.push(Math.round(card.y / GRID_SIZE));
+      vals.push(...card.getIntPos(false));
     });
     return btoa(JSON.stringify(vals));
   }
@@ -746,8 +878,7 @@ function init([elements, metadata, , multiplayer]) {
   else if (localStorage.getItem(COOKIE_NAME))
     load(localStorage.getItem(COOKIE_NAME));
   document.getElementById('menu-btn').addEventListener('click', e => {
-    menu.classList.add('showing');
-    overlayCover.classList.add('showing');
+    cardParent.openOverlay(menu);
     savecode.value = save();
   });
   localStorage.setItem(COOKIE_NAME, save());
@@ -761,13 +892,19 @@ function init([elements, metadata, , multiplayer]) {
   });
   document.getElementById('load').addEventListener('click', e => {
     load(savecode.value);
-    TogetherJS.send({type: 'load-entire-thing', code: save()});
+    if (multiplayer)
+      TogetherJS.send({type: 'load-entire-thing', code: save()});
   });
   document.addEventListener('keydown', e => {
     if (e.keyCode === 27) {
       const overlayClose = document.querySelector('.overlay.showing .close');
       if (overlayClose) overlayClose.click();
     }
+  });
+
+  document.body.className = localStorage.getItem('[olamreee] theme') === 'dark' ? 'dark' : 'light';
+  document.getElementById('toggle-theme').addEventListener('click', e => {
+    localStorage.setItem('[olamreee] theme', document.body.className = localStorage.getItem('[olamreee] theme') === 'dark' ? 'light' : 'dark');
   });
 
   function paint() {
@@ -792,6 +929,12 @@ function init([elements, metadata, , multiplayer]) {
 
   if (multiplayer) {
     const styles = {};
+    function createFor(userID) {
+      if (styles[userID]) return;
+      const style = document.createElement('style');
+      document.head.insertBefore(style, document.head.firstChild);
+      styles[userID] = style;
+    }
     function userIDtoClass(userID) {
       return 'q' + userID.toLowerCase().replace(/^[0-9]|[^0-9a-z-]/g, '-');
     }
@@ -802,34 +945,47 @@ function init([elements, metadata, , multiplayer]) {
     TogetherJS.hub.on('move', msg => {
       if (!msg.sameUrl) return;
       const positions = msg.positions;
-      positions.forEach(({symbol, x, y}) => {
-        const element = elements.find(card => card.data.symbol === symbol);
-        element.reposition(x, y, true);
-        element.toTop();
+      positions.forEach(({identifier, x, y}) => {
+        const card = cardParent.cards.find(card => card.identifier === identifier);
+        card.reposition(x, y, true);
+        card.toTop();
       });
     });
     TogetherJS.hub.on('reselect', msg => {
       if (!msg.sameUrl) return;
       const user = userIDtoClass(msg.peer.id);
       Array.from(document.getElementsByClassName(user)).forEach(card => card.classList.remove(user));
-      msg.selected.forEach(symbol => {
-        elements.find(card => card.data.symbol === symbol).elem.classList.add(user);
+      msg.selected.forEach(identifier => {
+        cardParent.cards.find(card => card.identifier === identifier).elem.classList.add(user);
       });
+      createFor(msg.peer.id);
       styles[msg.peer.id].innerHTML = `.${userIDtoClass(msg.peer.id)}{box-shadow:0 0 20px ${msg.peer.color},inset 0 0 10px ${msg.peer.color};}`;
     });
     TogetherJS.hub.on('togetherjs.hello', msg => {
       if (!msg.sameUrl) return;
-      const style = document.createElement('style');
-      document.head.insertBefore(style, document.head.firstChild);
-      styles[msg.clientId] = style;
+      createFor(msg.clientId);
       TogetherJS.send({type: 'load-entire-thing', code: save()});
       TogetherJS.send({type: 'hi-i-also-exist'});
       cardParent.updateSelectionStatus();
     });
     TogetherJS.hub.on('hi-i-also-exist', msg => {
       if (!msg.sameUrl) return;
-      const style = document.createElement('style');
-      document.head.insertBefore(style, document.head.firstChild);
+      createFor(msg.peer.id);
+    });
+    TogetherJS.hub.on('note-new', msg => {
+      if (!msg.sameUrl) return;
+      const note = new NoteCard(cardParent);
+      note.reposition(msg.x, msg.y);
+    });
+    TogetherJS.hub.on('note-edit', msg => {
+      if (!msg.sameUrl) return;
+      cardParent.notes.find(note => note.x === msg.x && note.y === msg.y
+        && note.noteContent === msg.oldContent).noteContent = msg.newContent;
+    });
+    TogetherJS.hub.on('note-poof', msg => {
+      if (!msg.sameUrl) return;
+      cardParent.notes.find(note => note.x === msg.x && note.y === msg.y
+        && note.noteContent === msg.content).poof();
     });
   }
 

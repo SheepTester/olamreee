@@ -11,7 +11,7 @@
     <script src="./chroma.min.js" charset="utf-8"></script>
     <script src="./brain.js" charset="utf-8"></script>
   </head>
-  <body class="show-name">
+  <body class="light">
     <div id="cards"></div>
     <div class="tooltip" id="mouse-tooltip">
       <h3>Mouse</h3>
@@ -27,6 +27,14 @@
       <button class="close">close</button>
       <h1 class="overlay-heading" id="element-name"></h1>
       <div class="overlay-content" id="element-info-content"></div>
+    </div>
+    <div class="overlay" id="note-editor">
+      <button class="close">close</button>
+      <h1 class="overlay-heading">Note</h1>
+      <div class="overlay-content">
+        <textarea id="note-content" placeholder="Note content here"></textarea>
+        <button class="menu-btn" id="remove-note">Remove</button>
+      </div>
     </div>
     <p id="status"></p>
     <div class="overlay" id="menu">
@@ -50,6 +58,7 @@
         <button class="menu-btn" id="gen-url">generate</button>
         <h2>Help</h2>
         <button class="menu-btn" id="snap-toggle">disable snapping</button>
+        <button class="menu-btn" id="toggle-theme">toggle theme</button>
         <p>The app is intentionally in Times New Roman.</p>
         <h3>Mouse</h3>
         <p>You can drag on the grid or scroll to pan around.</p>
@@ -59,6 +68,7 @@
         <p>Hold <code>shift</code> while dragging to select multiple elements; then you can drag one of the selected elements to move all of them at once.</p>
         <p>If you start <code>shift</code>-dragging from an already-selected element, it will deselect the elements in the highlighted region instead.</p>
         <p>Hold <code>shift</code> to select/deselect individual elements.</p>
+        <p><code>ctrl</code>+click (<code>cmmd</code> for Macs) on the grid to place a note, then click on the note to edit the message.</p>
         <p><code>shift</code>-click the grid to clear your selection.</p>
         <h3>Touch</h3>
         <p>Drag your finger on the grid to pan around.</p>
@@ -72,6 +82,8 @@
         <h2>Changelog</h2>
         <p>Update 4</p>
         <ul>
+          <li>added dark theme (click "toggle theme" button)</li>
+          <li>added notes (for mouse users only right now)</li>
           <li>live editing cursors are now more aggressively hidden</li>
           <li>the URL generator now bases its default values from the URL</li>
           <li>the URL generator includes possible values for some parameters</li>
@@ -79,6 +91,7 @@
           <li>fixed current selections not being sent to new users</li>
           <li>user colours should now update a bit more frequently</li>
           <li>loading from a save code in live editing now loads for others too</li>
+          <li>you now can't tab-focus to something in a closed overlay</li>
         </ul>
         <p>Update 3</p>
         <ul>
@@ -100,6 +113,7 @@
         <p>Olamreee (three e's; pronounced "oh-lahm REEEEEE") was made by <a href="https://sheeptester.github.io/">Sean</a>, the same person who made <a href="https://orbiit.github.io/gunn-web-app/">UGWA</a> and posted surviv.io on Schoology.</p>
         <p>This web app is open-sourced on <a href="https://github.com/SheepTester/olamreee">Github</a>; you can submit bug reports and questions there as issues or as emails to <a href="mailto:sy24484@pausd.us">sy24484@pausd.us</a>.</p>
         <p>Live editing was made possible thanks to <a href="https://togetherjs.com/">TogetherJS</a>.</p>
+        <p>Dark theme by <a href="https://velosify.github.io/">Steven</a>.</p>
         <p>Thanks to Dr. Mellows for this rather intriguing project :)</p>
       </div>
     </div>
