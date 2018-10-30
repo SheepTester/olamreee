@@ -669,6 +669,7 @@ function init([elements, metadata, , multiplayer]) {
           camera.y = initY + initCY / initScale - centreY / camera.scale;
         }
         partner.setDragPos = (mouseX, mouseY) => recalc(lastVals.x1, lastVals.y1, lastVals.x2 = mouseX, lastVals.y2 = mouseY);
+        partner.stopDragging = null;
         cardParent.touchDrags[touch.identifier] = {
           scroll: true,
           setDragPos(mouseX, mouseY) {
@@ -707,14 +708,23 @@ function init([elements, metadata, , multiplayer]) {
             }
             camera.x = initX + touch.clientX / initScale - (this.lastX = mouseX) / camera.scale;
             camera.y = initY + touch.clientY / initScale - (this.lastY = mouseY) / camera.scale;
+          },
+          stopDragging() {
+            if (!this.dragging) {
+              if (options.multiple && options.multipleTouch) {
+                cardParent.clearSelection();
+              } else {
+                const x = Math.floor((touch.clientX / camera.scale + camera.x) / GRID_SIZE);
+                const y = Math.floor((touch.clientY / camera.scale + camera.y) / GRID_SIZE);
+                const note = new NoteCard(cardParent);
+                note.reposition(x, y);
+                if (multiplayer) {
+                  TogetherJS.send({type: 'note-new', x: note.x, y: note.y});
+                }
+              }
+            }
           }
         };
-        if (options.multiple && options.multipleTouch) {
-          cardParent.touchDrags[touch.identifier].stopDragging = () => {
-            if (!cardParent.touchDrags[touch.identifier].dragging)
-              cardParent.clearSelection();
-          };
-        }
       }
       e.preventDefault();
       cardParent.createTouchListeners();
