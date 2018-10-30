@@ -365,6 +365,10 @@ function init([elements, metadata, , multiplayer]) {
   const urlShow = document.getElementById('url-show');
   const generateURL = document.getElementById('gen-url');
 
+  if (params.room) urlRoom.value = params.room;
+  if (params.source) urlSource.value = params.source;
+  if (params.key) urlKey.value = params.key;
+  if (params.show) urlShow.value = params.show;
   generateURL.addEventListener('click', e => {
     window.location = `?room=${urlRoom.value}&source=${urlSource.value}&key=${urlKey.value}&show=${urlShow.value}`;
   });
@@ -757,6 +761,7 @@ function init([elements, metadata, , multiplayer]) {
   });
   document.getElementById('load').addEventListener('click', e => {
     load(savecode.value);
+    TogetherJS.send({type: 'load-entire-thing', code: save()});
   });
   document.addEventListener('keydown', e => {
     if (e.keyCode === 27) {
@@ -786,8 +791,7 @@ function init([elements, metadata, , multiplayer]) {
   paint();
 
   if (multiplayer) {
-    const selectHighlightStyle = document.createElement('style');
-    document.head.insertBefore(selectHighlightStyle, document.head.firstChild);
+    const styles = {};
     function userIDtoClass(userID) {
       return 'q' + userID.toLowerCase().replace(/^[0-9]|[^0-9a-z-]/g, '-');
     }
@@ -811,16 +815,21 @@ function init([elements, metadata, , multiplayer]) {
       msg.selected.forEach(symbol => {
         elements.find(card => card.data.symbol === symbol).elem.classList.add(user);
       });
+      styles[msg.peer.id].innerHTML = `.${userIDtoClass(msg.peer.id)}{box-shadow:0 0 20px ${msg.peer.color},inset 0 0 10px ${msg.peer.color};}`;
     });
     TogetherJS.hub.on('togetherjs.hello', msg => {
       if (!msg.sameUrl) return;
-      selectHighlightStyle.innerHTML += `.${userIDtoClass(msg.clientId)}{box-shadow:0 0 20px ${msg.color},inset 0 0 10px ${msg.color};}`;
+      const style = document.createElement('style');
+      document.head.insertBefore(style, document.head.firstChild);
+      styles[msg.clientId] = style;
       TogetherJS.send({type: 'load-entire-thing', code: save()});
       TogetherJS.send({type: 'hi-i-also-exist'});
+      cardParent.updateSelectionStatus();
     });
     TogetherJS.hub.on('hi-i-also-exist', msg => {
       if (!msg.sameUrl) return;
-      selectHighlightStyle.innerHTML += `.${userIDtoClass(msg.peer.id)}{box-shadow:0 0 20px ${msg.peer.color},inset 0 0 10px ${msg.peer.color};}`;
+      const style = document.createElement('style');
+      document.head.insertBefore(style, document.head.firstChild);
     });
   }
 

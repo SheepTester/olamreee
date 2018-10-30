@@ -41,13 +41,13 @@
         <button class="menu-btn" id="grid-toggle">hide grid</button>
         <h2>Generate URL</h2>
         <p>Don't forget to save.</p>
-        <p>
-          Live editing room ID: <input type="text" placeholder="room" id="url-room">
-          Source path: <input type="text" placeholder="source" value="./olam" id="url-source">
-          Savecode key: <input type="text" placeholder="key" id="url-key">
-          Show by default: <input type="text" placeholder="show" value="ie" id="url-show">
-          <button class="menu-btn" id="gen-url">generate</button>
-        </p>
+        <p>Live editing room ID: <input type="text" placeholder="room" id="url-room"></p>
+        <p>Source path: <input type="text" placeholder="source" value="" id="url-source"><br>
+          Possible source paths: <code>./olam</code>, <code>./main-group</code></p>
+        <p>Savecode ID: <input type="text" placeholder="key" id="url-key"></p>
+        <p>Default property shown: <input type="text" placeholder="show" value="" id="url-show"><br>
+          Possible properties: <code>mass</code>, <code>state</code>, <code>melting</code>, <code>type</code>, <code>ie</code>, <code>note</code></p>
+        <button class="menu-btn" id="gen-url">generate</button>
         <h2>Help</h2>
         <button class="menu-btn" id="snap-toggle">disable snapping</button>
         <p>The app is intentionally in Times New Roman.</p>
@@ -65,7 +65,21 @@
         <p>Use two fingers to zoom.</p>
         <p>Drag the Olamite element cards to move them.</p>
         <p>Use "select multiple" mode to select multiple element; you can use two fingers to pan around while in this mode. To drag the elements, you need to turn off this mode first.</p>
+        <h3>Live editing</h3>
+        <p>Thanks to TogetherJS, you can work on the same periodic table at the same time.</p>
+        <p>In the "Generate URL" section above, make up a room ID and then click "generate"; then send the URL to your groupmates.</p>
+        <p>If you don't want random people joining, set the room ID to something hard to guess, like a random string of numbers and letters.</p>
         <h2>Changelog</h2>
+        <p>Update 4</p>
+        <ul>
+          <li>live editing cursors are now more aggressively hidden</li>
+          <li>the URL generator now bases its default values from the URL</li>
+          <li>the URL generator includes possible values for some parameters</li>
+          <li>added live editing section in help</li>
+          <li>fixed current selections not being sent to new users</li>
+          <li>user colours should now update a bit more frequently</li>
+          <li>loading from a save code in live editing now loads for others too</li>
+        </ul>
         <p>Update 3</p>
         <ul>
           <li>added live editing (slightly buggy)</li>
