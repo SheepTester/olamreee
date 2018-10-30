@@ -315,5 +315,5 @@ a {
 }
 
 .togetherjs-cursor {
-  display: none;
+  display: none !important;
 }
