@@ -49,7 +49,8 @@ const options = {
   drag: true,
   snap: true,
   multiple: true,
-  multipleTouch: false
+  multipleTouch: false,
+  notes: true
 };
 
 const colourScales = {};
@@ -425,6 +426,7 @@ function init([elements, metadata, , multiplayer]) {
   const urlShow = document.getElementById('url-show');
   const generateURL = document.getElementById('gen-url');
   const noteEditor = document.getElementById('note-content');
+  const disableNotesBtn = document.getElementById('notes-disable');
 
   if (params.room) urlRoom.value = params.room;
   if (params.source) urlSource.value = params.source;
@@ -713,7 +715,7 @@ function init([elements, metadata, , multiplayer]) {
             if (!this.dragging) {
               if (options.multiple && options.multipleTouch) {
                 cardParent.clearSelection();
-              } else {
+              } else if (options.notes) {
                 const x = Math.floor((touch.clientX / camera.scale + camera.x) / GRID_SIZE);
                 const y = Math.floor((touch.clientY / camera.scale + camera.y) / GRID_SIZE);
                 const note = new NoteCard(cardParent);
@@ -754,7 +756,7 @@ function init([elements, metadata, , multiplayer]) {
             camera.y = initY + e.clientY / initScale - mouseY / camera.scale;
           },
           stopDragging(...args) {
-            if (!this.dragging && (e.ctrlKey || e.metaKey)) {
+            if (options.notes && !this.dragging && (e.ctrlKey || e.metaKey)) {
               const x = Math.floor((e.clientX / camera.scale + camera.x) / GRID_SIZE);
               const y = Math.floor((e.clientY / camera.scale + camera.y) / GRID_SIZE);
               const note = new NoteCard(cardParent);
@@ -789,6 +791,10 @@ function init([elements, metadata, , multiplayer]) {
   snapToggler.addEventListener('click', e => {
     options.snap = !options.snap;
     snapToggler.textContent = options.snap ? 'disable snapping' : 'enable snapping';
+  });
+  disableNotesBtn.addEventListener('click', e => {
+    options.notes = !options.notes;
+    disableNotesBtn.textContent = options.notes ? 'disable adding notes' : 'enable adding notes';
   });
 
   document.addEventListener('touchstart', e => {
