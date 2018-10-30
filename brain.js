@@ -33,6 +33,8 @@ if (params.room) {
   multiplayerScriptTag = document.createElement('script');
   multiplayerScriptTag.src = 'https://togetherjs.com/togetherjs-min.js';
   document.head.appendChild(multiplayerScriptTag);
+  sessionStorage.removeItem('togetherjs-session.status');
+  sessionStorage.removeItem('togetherjs-session.peerCache');
 }
 
 const GRID_SIZE = 150;
@@ -939,11 +941,9 @@ function init([elements, metadata, , multiplayer]) {
       return 'q' + userID.toLowerCase().replace(/^[0-9]|[^0-9a-z-]/g, '-');
     }
     TogetherJS.hub.on('load-entire-thing', msg => {
-      if (!msg.sameUrl) return;
       load(msg.code);
     });
     TogetherJS.hub.on('move', msg => {
-      if (!msg.sameUrl) return;
       const positions = msg.positions;
       positions.forEach(({identifier, x, y}) => {
         const card = cardParent.cards.find(card => card.identifier === identifier);
@@ -952,7 +952,6 @@ function init([elements, metadata, , multiplayer]) {
       });
     });
     TogetherJS.hub.on('reselect', msg => {
-      if (!msg.sameUrl) return;
       const user = userIDtoClass(msg.peer.id);
       Array.from(document.getElementsByClassName(user)).forEach(card => card.classList.remove(user));
       msg.selected.forEach(identifier => {
@@ -962,28 +961,23 @@ function init([elements, metadata, , multiplayer]) {
       styles[msg.peer.id].innerHTML = `.${userIDtoClass(msg.peer.id)}{box-shadow:0 0 20px ${msg.peer.color},inset 0 0 10px ${msg.peer.color};}`;
     });
     TogetherJS.hub.on('togetherjs.hello', msg => {
-      if (!msg.sameUrl) return;
       createFor(msg.clientId);
       TogetherJS.send({type: 'load-entire-thing', code: save()});
       TogetherJS.send({type: 'hi-i-also-exist'});
       cardParent.updateSelectionStatus();
     });
     TogetherJS.hub.on('hi-i-also-exist', msg => {
-      if (!msg.sameUrl) return;
       createFor(msg.peer.id);
     });
     TogetherJS.hub.on('note-new', msg => {
-      if (!msg.sameUrl) return;
       const note = new NoteCard(cardParent);
       note.reposition(msg.x, msg.y);
     });
     TogetherJS.hub.on('note-edit', msg => {
-      if (!msg.sameUrl) return;
       cardParent.notes.find(note => note.x === msg.x && note.y === msg.y
         && note.noteContent === msg.oldContent).noteContent = msg.newContent;
     });
     TogetherJS.hub.on('note-poof', msg => {
-      if (!msg.sameUrl) return;
       cardParent.notes.find(note => note.x === msg.x && note.y === msg.y
         && note.noteContent === msg.content).poof();
     });
