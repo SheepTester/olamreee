@@ -41,8 +41,10 @@ const GRID_SIZE = 150;
 const SCROLL_THRESHOLD = GRID_SIZE * 100;
 const AUTO_SCROLL_SPEED = 10;
 const DRAG_DIST = 4;
-const GRID_URL = `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='${GRID_SIZE}' height='${GRID_SIZE}' fill='none' stroke='rgba(0,0,0,0.2)' stroke-width='2'%3E%3Cpath d='M0 0V${GRID_SIZE}H${GRID_SIZE}V0z'/%3E%3C/svg%3E")`;
 const COOKIE_NAME = params.key ? '[olamreee] savecode.custom.' + params.key : '[olamreee] savecode' + SOURCE;
+function getGrid(dark) {
+  return `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='${GRID_SIZE}' height='${GRID_SIZE}' fill='none' stroke='${dark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.2)'}' stroke-width='2'%3E%3Cpath d='M0 0V${GRID_SIZE}H${GRID_SIZE}V0z'/%3E%3C/svg%3E")`;
+}
 
 const options = {
   showGrid: true,
@@ -151,6 +153,7 @@ class Card {
     if (this.snapped)
       this.unposition();
     this.snapped = false;
+    this.lastIdentifier = this.identifier;
   }
 
   startDragging() {
@@ -184,7 +187,7 @@ class Card {
     }
     if (this.parent.multiplayer) {
       this.parent.newPositions([this, ...selected].map(card => {
-        const obj = {identifier: card.identifier};
+        const obj = {identifier: card.lastIdentifier};
         [obj.x, obj.y] = card.getIntPos(false);
         return obj;
       }));
@@ -303,7 +306,7 @@ class NoteCard extends Card {
   constructor(parent, noteContent = '') {
     super(parent);
 
-    this.noteContent = noteContent;
+    this.setNoteContent = noteContent;
     const asterisk = document.createElement('span');
     asterisk.textContent = '*';
     this.elem.appendChild(asterisk);
@@ -320,7 +323,7 @@ class NoteCard extends Card {
   }
 
   get identifier() {
-    return '--' + this.noteContent;
+    return `--${this.getIntPos(true)}-` + this.noteContent;
   }
 
   poof() {
@@ -328,6 +331,11 @@ class NoteCard extends Card {
     this.parent.wrapper.removeChild(this.elem);
     const index = this.parent.notes.indexOf(this);
     if (~index) this.parent.notes.splice(index, 1);
+  }
+
+  set setNoteContent(noteContent) {
+    this.noteContent = noteContent;
+    this.elem.title = noteContent;
   }
 
 }
@@ -428,6 +436,11 @@ function init([elements, metadata, , multiplayer]) {
   const noteEditor = document.getElementById('note-content');
   const disableNotesBtn = document.getElementById('notes-disable');
 
+  [urlRoom, urlSource, urlKey, urlShow].forEach(input => input.addEventListener('keydown', e => {
+    if (e.keyCode === 13) {
+      generateURL.click();
+    }
+  }));
   if (params.room) urlRoom.value = params.room;
   if (params.source) urlSource.value = params.source;
   if (params.key) urlKey.value = params.key;
@@ -515,7 +528,7 @@ function init([elements, metadata, , multiplayer]) {
           newContent: noteEditor.value
         });
       }
-      cardParent.editingNote.noteContent = noteEditor.value;
+      cardParent.editingNote.setNoteContent = noteEditor.value;
     }
   });
   document.getElementById('remove-note').addEventListener('click', e => {
@@ -532,7 +545,11 @@ function init([elements, metadata, , multiplayer]) {
       note.poof();
       cardParent.editingNote = null;
       cardParent.closeOverlay(cardParent.infoElems.noteOverlay);
+      cardParent.updateSelectionStatus();
     }
+  });
+  document.getElementById('remove-selected').addEventListener('click', e => {
+    deleteSelectedNotes();
   });
 
   function touchMove(e) {
@@ -640,6 +657,24 @@ function init([elements, metadata, , multiplayer]) {
       return [...this.elements, ...this.notes];
     }
   };
+  function deleteSelectedNotes() {
+    if (multiplayer) {
+      TogetherJS.send({
+        type: 'note-many-went-poof',
+        poofers: cardParent.notes.filter(note => note.selected).map(note => {
+          note.poof();
+          return {
+            x: note.x,
+            y: note.y,
+            content: note.noteContent
+          };
+        })
+      });
+    } else {
+      cardParent.notes.filter(note => note.selected).forEach(note => note.poof());
+    }
+    cardParent.updateSelectionStatus();
+  }
   document.querySelectorAll('.overlay input, .overlay textarea, .overlay button, .overlay a')
     .forEach(elem => elem.setAttribute('tabindex', '-1'));
   elements = elements.map(data => new ElementCard(cardParent, data));
@@ -720,8 +755,10 @@ function init([elements, metadata, , multiplayer]) {
                 const y = Math.floor((touch.clientY / camera.scale + camera.y) / GRID_SIZE);
                 const note = new NoteCard(cardParent);
                 note.reposition(x, y);
+                cardParent.openOverlay(cardParent.infoElems.noteOverlay);
+                cardParent.editingNote = note;
                 if (multiplayer) {
-                  TogetherJS.send({type: 'note-new', x: note.x, y: note.y});
+                  TogetherJS.send({type: 'note-new', x: x, y: y});
                 }
               }
             }
@@ -761,8 +798,10 @@ function init([elements, metadata, , multiplayer]) {
               const y = Math.floor((e.clientY / camera.scale + camera.y) / GRID_SIZE);
               const note = new NoteCard(cardParent);
               note.reposition(x, y);
+              cardParent.openOverlay(cardParent.infoElems.noteOverlay);
+              cardParent.editingNote = note;
               if (multiplayer) {
-                TogetherJS.send({type: 'note-new', x: note.x, y: note.y});
+                TogetherJS.send({type: 'note-new', x: x, y: y});
               }
             }
           }
@@ -777,16 +816,21 @@ function init([elements, metadata, , multiplayer]) {
     card.reposition(i, 0);
   });
 
-  document.body.style.backgroundImage = GRID_URL;
+  document.body.style.backgroundImage = getGrid(localStorage.getItem('[olamreee] theme') === 'dark');
+  document.body.className = localStorage.getItem('[olamreee] theme') === 'dark' ? 'dark' : 'light';
   gridToggler.addEventListener('click', e => {
     options.showGrid = !options.showGrid;
     if (options.showGrid) {
       gridToggler.textContent = 'hide grid';
-      document.body.style.backgroundImage = GRID_URL;
+      document.body.style.backgroundImage = getGrid(localStorage.getItem('[olamreee] theme') === 'dark');
     } else {
       gridToggler.textContent = 'show grid';
       document.body.style.backgroundImage = 'none';
     }
+  });
+  document.getElementById('toggle-theme').addEventListener('click', e => {
+    localStorage.setItem('[olamreee] theme', document.body.className = localStorage.getItem('[olamreee] theme') === 'dark' ? 'light' : 'dark');
+    document.body.style.backgroundImage = getGrid(localStorage.getItem('[olamreee] theme') === 'dark');
   });
   snapToggler.addEventListener('click', e => {
     options.snap = !options.snap;
@@ -917,12 +961,9 @@ function init([elements, metadata, , multiplayer]) {
     if (e.keyCode === 27) {
       const overlayClose = document.querySelector('.overlay.showing .close');
       if (overlayClose) overlayClose.click();
+    } else if (e.keyCode === 8 || e.keyCode === 46) {
+      deleteSelectedNotes();
     }
-  });
-
-  document.body.className = localStorage.getItem('[olamreee] theme') === 'dark' ? 'dark' : 'light';
-  document.getElementById('toggle-theme').addEventListener('click', e => {
-    localStorage.setItem('[olamreee] theme', document.body.className = localStorage.getItem('[olamreee] theme') === 'dark' ? 'light' : 'dark');
   });
 
   function paint() {
@@ -991,11 +1032,18 @@ function init([elements, metadata, , multiplayer]) {
     });
     TogetherJS.hub.on('note-edit', msg => {
       cardParent.notes.find(note => note.x === msg.x && note.y === msg.y
-        && note.noteContent === msg.oldContent).noteContent = msg.newContent;
+        && note.noteContent === msg.oldContent).setNoteContent = msg.newContent;
     });
     TogetherJS.hub.on('note-poof', msg => {
       cardParent.notes.find(note => note.x === msg.x && note.y === msg.y
         && note.noteContent === msg.content).poof();
+    });
+    TogetherJS.hub.on('note-many-went-poof', msg => {
+      const xPoses = msg.poofers.map(note => note.x);
+      const yPoses = msg.poofers.map(note => note.y);
+      const contents = msg.poofers.map(note => note.content);
+      cardParent.notes.filter(note => xPoses.includes(note.x) && yPoses.includes(note.y)
+        && contents.includes(note.noteContent)).map(note => note.poof());
     });
   }
 

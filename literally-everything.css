@@ -361,6 +361,6 @@ a {
   margin: 20px 0;
 }
 
-.togetherjs-cursor {
+.togetherjs-cursor, .togetherjs-focus {
   display: none !important;
 }

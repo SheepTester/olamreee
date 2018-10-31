@@ -34,6 +34,7 @@
       <div class="overlay-content">
         <textarea id="note-content" placeholder="Note content here"></textarea>
         <button class="menu-btn" id="remove-note">Remove</button>
+        <button class="menu-btn" id="remove-selected">Remove selected</button>
       </div>
     </div>
     <p id="status"></p>
@@ -51,7 +52,7 @@
         <p>Don't forget to save.</p>
         <p>Live editing room ID: <input type="text" placeholder="room" id="url-room"></p>
         <p>Source path: <input type="text" placeholder="source" value="" id="url-source"><br>
-          Possible source paths: <code>./olam</code>, <code>./main-group</code></p>
+          Possible source paths: <code>olam</code>, <code>main-group</code></p>
         <p>Savecode ID: <input type="text" placeholder="key" id="url-key"></p>
         <p>Default property shown: <input type="text" placeholder="show" value="" id="url-show"><br>
           Possible properties: <code>mass</code>, <code>state</code>, <code>melting</code>, <code>type</code>, <code>ie</code>, <code>note</code></p>
@@ -69,6 +70,7 @@
         <p>If you start <code>shift</code>-dragging from an already-selected element, it will deselect the elements in the highlighted region instead.</p>
         <p>Hold <code>shift</code> to select/deselect individual elements.</p>
         <p><code>ctrl</code>+click (<code>cmmd</code> for Macs) on the grid to place a note, then click on the note to edit the message.</p>
+        <p>Press <code>backspace</code> or <code>delete</code> to delete selected notes</p>
         <p><code>shift</code>-click the grid to clear your selection.</p>
         <h3>Touch</h3>
         <p>Drag your finger on the grid to pan around.</p>
@@ -82,6 +84,15 @@
         <p>In the "Generate URL" section above, make up a room ID and then click "generate"; then send the URL to your groupmates.</p>
         <p>If you don't want random people joining, set the room ID to something hard to guess, like a random string of numbers and letters.</p>
         <h2>Changelog</h2>
+        <p>Update 5</p>
+        <ul>
+          <li>you can now delete multiple notes by pressing <code>backspace</code> or <code>delete</code> after selecting them or clicking the "Remove selected" button in the notes editor</li>
+          <li>you can now preview note content by hovering your mouse over it</li>
+          <li>the note editor now automatically opens when you add a note</li>
+          <li>grid in dark theme now uses white lines</li>
+          <li>pressing <code>enter</code> while focused on one of the generate URL inputs will generate the URL</li>
+          <li>fixed adding notes in live editing</li>
+        </ul>
         <p>Update 4</p>
         <ul>
           <li>added dark theme (click "toggle theme" button)</li>
@@ -112,8 +123,10 @@
           <li>initial release</li>
         </ul>
         <h2>About</h2>
+        <p>You're welcome.</p>
         <p>Olamreee (three e's; pronounced "oh-lahm REEEEEE") was made by <a href="https://sheeptester.github.io/">Sean</a>, the same person who made <a href="https://orbiit.github.io/gunn-web-app/">UGWA</a> and posted surviv.io on Schoology.</p>
         <p>This web app is open-sourced on <a href="https://github.com/SheepTester/olamreee">Github</a>; you can submit bug reports and questions there as issues or as emails to <a href="mailto:sy24484@pausd.us">sy24484@pausd.us</a>.</p>
+        <p>Colour gradients to show melting points were made possible thanks to <a href="https://gka.github.io/chroma.js/">chroma.js</a>.</p>
         <p>Live editing was made possible thanks to <a href="https://togetherjs.com/">TogetherJS</a>.</p>
         <p>Dark theme by <a href="https://velosify.github.io/">Steven</a>.</p>
         <p>Thanks to Dr. Mellows for this rather intriguing project :)</p>
