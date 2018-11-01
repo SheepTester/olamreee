@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <title>OlamREEE Diagram maker - Olamite Periodic Table Editor</title>
+    <meta charset="UTF-8">
+    <meta name="description" content="A tool to create an image of a periodic table for the elements on planet Olam."/>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+    <!-- <link rel="stylesheet" type="text/css" href="../../sheep2.css"> -->
+    <link rel="stylesheet" href="./most-things.css">
+    <link rel="stylesheet" href="../simplecolour.css">
+    <!-- <script src="../../sheep2.js" charset="utf-8"></script> -->
+    <script src="../chroma.min.js" charset="utf-8"></script>
+    <script src="./thonkmachine.js" charset="utf-8"></script>
+  </head>
+  <body>
+    <h1>The hard-to-use and unintuitive OlamREEE diagram maker!</h1>
+    <h2>Default element style</h2>
+    <div class="editor" id="element-style"></div>
+    <div class="attr-editor" id="text-edit">
+      <h3>Text</h3>
+      <p>Content: <select id="show-key">
+        <option>custom content</option>
+        <option>atomic symbol</option>
+        <option>atomic name</option>
+        <option>atomic number</option>
+      </select></p>
+      <p>Custom content: <input type="text" id="content" value="text"></p>
+      <p>
+        Align:
+        <input type="radio" name="align" id="left"><label for="left">left</label>
+        <input type="radio" name="align" id="centre" checked><label for="centre">centre</label>
+        <input type="radio" name="align" id="right"><label for="right">right</label>
+      </p>
+      <p>Angle: <input type="number" value="0">&deg;</p>
+      <p>Text colour: <input type="radio" class="simplecolourpicker" value="#333" checked></p>
+      <p>Text size: <input type="number" id="size" value="12"></p>
+      <p>X: <input type="number" id="text-x" value="12"> Y: <input type="number" id="text-y" value="12"></p>
+    </div>
+    <div class="attr-editor hidden" id="rect-edit">
+      <h3>Rectangle</h3>
+      <p>X: <input type="number" id="text-x" value="12"> Y: <input type="number" id="text-y" value="12"></p>
+      <p>width: <input type="number" id="text-x" value="12"> height: <input type="number" id="text-y" value="12"></p>
+      <p>Background: <input type="radio" class="simplecolourpicker" value="#ff7373" checked></p>
+      <p>Background opacity: <input type="number" id="text-x" value="0.5"></p>
+      <p><input type="checkbox" name="border" checked><label for="border">Use border?</label></p>
+      <p>Border colour: <input type="radio" class="simplecolourpicker" value="#ff7373" checked></p>
+      <p>Border opacity: <input type="number" id="text-x" value="0.5"></p>
+    </div>
+    <p><input type="checkbox" name="use-times" checked><label for="use-times">Use Times New Roman?</label></p>
+    <p>Otherwise, font name: <input type="text" id="font" value="Open Sans"> (from <a href="https://fonts.google.com/">Google Fonts</a>)</p>
+    <p>Background: <input type="radio" class="simplecolourpicker" value="#fff" checked></p>
+    <p><input type="checkbox" name="border" checked><label for="border">Use border?</label></p>
+    <p>Border colour: <input type="radio" class="simplecolourpicker" value="#333" checked></p>
+
+    <script src="../simplecolour.js" charset="utf-8"></script>
+  </body>
+</html>

@@ -1,0 +1,97 @@
+body {
+  margin: 0 auto;
+  width: 100%;
+  max-width: 1000px;
+  padding: 20px;
+  box-sizing: border-box;
+  background-color: #eee;
+  color: rgba(0, 0, 0, 0.8);
+}
+
+button {
+  -webkit-touch-callout: none;
+    -webkit-user-select: none;
+     -khtml-user-select: none;
+       -moz-user-select: none;
+        -ms-user-select: none;
+            user-select: none;
+}
+code {
+  background-color: #ddd;
+  padding: 1px 3px;
+  border-bottom: 3px solid #aaa;
+}
+button {
+  vertical-align: middle;
+  padding: 5px 10px;
+  margin-right: 10px;
+  border: none;
+  background: none;
+  background-color: #ddd;
+  border-bottom: 3px solid #aaa;
+  font: inherit;
+  font-size: 18px;
+  color: inherit;
+  cursor: pointer;
+  border-radius: 5px;
+}
+button:active {
+  border-bottom: none;
+  border-top: 3px solid #aaa;
+}
+button:focus {
+  outline: none;
+  background-color: #48aaeb;
+  border-color: #2395e1;
+  color: white;
+}
+button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+textarea, input[type=text], input[type=number], select {
+  vertical-align: middle;
+  border: none;
+  background-color: rgba(0, 0, 0, 0.05);
+  border-radius: 5px;
+  box-sizing: border-box;
+  font: inherit;
+  font-size: 14px;
+  font-family: monospace;
+  color: inherit;
+  padding: 5px 10px;
+}
+textarea {
+  width: 100%;
+  height: 140px;
+  padding: 10px;
+  margin-bottom: 10px;
+}
+input[type=text] {
+  width: 100px;
+}
+input[type=number] {
+  width: 50px;
+}
+a {
+  color: black;
+}
+h1 {
+  font-weight: normal;
+}
+
+.attr-editor {
+  display: inline-block;
+  position: fixed;
+  bottom: 0;
+  right: 0;
+  background-color: rgba(255, 255, 255, 0.8);
+  border: 1px solid black;
+}
+.editor {
+  overflow: hidden;
+}
+
+.hidden {
+  display: none;
+}
