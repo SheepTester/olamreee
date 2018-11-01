@@ -17,6 +17,7 @@ if (window.location.search) {
 }
 
 const SOURCE = params.source ? params.source : './olam';
+const COOKIE_NAME = params.key ? '[olamreee] savecode.custom.' + params.key : '[olamreee] savecode' + SOURCE;
 
 let multiplayerScriptTag;
 if (params.room) {
@@ -41,7 +42,6 @@ const GRID_SIZE = 150;
 const SCROLL_THRESHOLD = GRID_SIZE * 100;
 const AUTO_SCROLL_SPEED = 10;
 const DRAG_DIST = 4;
-const COOKIE_NAME = params.key ? '[olamreee] savecode.custom.' + params.key : '[olamreee] savecode' + SOURCE;
 function getGrid(dark) {
   return `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='${GRID_SIZE}' height='${GRID_SIZE}' fill='none' stroke='${dark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.2)'}' stroke-width='2'%3E%3Cpath d='M0 0V${GRID_SIZE}H${GRID_SIZE}V0z'/%3E%3C/svg%3E")`;
 }
@@ -56,8 +56,6 @@ const options = {
 };
 
 const colourScales = {};
-
-const win = {};
 
 const camera = {x: 0, y: 0, scale: 1, vel: false};
 
@@ -877,13 +875,6 @@ function init([elements, metadata, , multiplayer]) {
     e.preventDefault();
   });
 
-  win.height = window.innerHeight;
-  win.width = window.innerWidth;
-  window.addEventListener('resize', e => {
-    win.height = window.innerHeight;
-    win.width = window.innerWidth;
-  });
-
   showBar.addEventListener('click', e => {
     if (e.target.dataset.prop) {
       cardsWrapper.className = 'show-' + e.target.dataset.prop;
@@ -902,11 +893,9 @@ function init([elements, metadata, , multiplayer]) {
           case 'approved by the sheep':
             const gmIndex = elements.findIndex(card => card.data.symbol === 'Gm');
             vals.splice(gmIndex * 2 + 1, 0, 50, 0);
-          case 'sheep-approved':
-            vals.splice(1, 0, []);
-            break;
         }
       }
+      if (!Array.isArray(vals[1])) vals.splice(1, 0, []);
       const notes = vals[1];
       vals = vals.slice(2);
       cardParent.positions = {};
@@ -983,7 +972,7 @@ function init([elements, metadata, , multiplayer]) {
   }
   camera.scale = 0.5;
   camera.x = -GRID_SIZE / 2;
-  camera.y = -(win.height - GRID_SIZE) / 2 / camera.scale;
+  camera.y = -(window.innerHeight - GRID_SIZE) / 2 / camera.scale;
   paint();
 
   if (multiplayer) {

@@ -1,0 +1,24 @@
+{
+  "_DEFAULT_SORT_": "z",
+  "z": {
+    "show-btn": "Z",
+    "info-label": "Atomic number",
+    "key": {
+      "type": "range",
+      "colours": ["white", "888"],
+      "domain": [0, 118],
+      "default": "white"
+    }
+  },
+  "melting": {
+    "show-btn": "Melting point",
+    "info-label": "Melting point",
+    "suffix": " K",
+    "key": {
+      "type": "range",
+      "colours": ["2395e1", "b2d7f0", "e9f0b2", "ebad3c", "f34d22"],
+      "domain": [0, 4500],
+      "default": "white"
+    }
+  }
+}
