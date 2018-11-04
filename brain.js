@@ -1,9 +1,10 @@
 // URL PARAMETERS
-// source - where to load JSON data from
-// room   - live editing room ID
-// key    - localStorage name for the save code
-// code   - the code to load (+: -; =: _)
-// show   - filter to show by default
+// source   - where to load JSON data from
+// room     - live editing room ID
+// key      - localStorage name for the save code
+// code     - the code to load (+: -; =: _)
+// show     - filter to show by default
+// override - base64 encoded JSON to override/add properties (+: -; =: _)
 const params = {};
 if (window.location.search) {
   window.location.search.slice(1).split('&').forEach(entry => {
@@ -265,6 +266,8 @@ class ElementCard extends Card {
     this.data = data;
     const metadata = parent.metadata;
     const elem = this.elem;
+    if (data._OVERRIDEN_ === true)
+      this.elem.classList.add('predicted');
     let innerHTML = `<span class="name">${data.name}</span><span class="symbol">${data.symbol}</span>`;
     Object.keys(metadata).forEach(prop => {
       if (data[prop] === undefined) return;
@@ -273,7 +276,10 @@ class ElementCard extends Card {
       } else {
         elem.classList.add(`z${prop}-${classnameify(data[prop])}`);
       }
-      innerHTML += `<span class="z${prop}">${data[prop]}</span>`;
+      if (Array.isArray(data._OVERRIDEN_) && data._OVERRIDEN_.includes(prop))
+        innerHTML += `<span class="z${prop} overriden">${data[prop]}*</span>`;
+      else
+        innerHTML += `<span class="z${prop}">${data[prop]}</span>`;
     });
     elem.innerHTML = innerHTML;
     this.identifier = this.data.symbol;
@@ -446,6 +452,30 @@ function init([elements, metadata, , multiplayer]) {
   generateURL.addEventListener('click', e => {
     window.location = `?room=${urlRoom.value}&source=${urlSource.value}&key=${urlKey.value}&show=${urlShow.value}`;
   });
+
+  if (params.override) try {
+    const overrides = JSON.parse(atob(params.override.replace(/_/g, '=').replace(/-/g, '+')));
+    const replace = overrides[0] === 'replace';
+    if (replace) overrides.splice(0, 1);
+    overrides.forEach(elem => {
+      const sourceElem = elements.find(el => elem.symbol === el.symbol);
+      if (sourceElem) {
+        Object.keys(elem).forEach(val => {
+          sourceElem[val] = elem[val];
+        });
+        if (!replace) {
+          sourceElem._OVERRIDEN_ = Object.keys(elem);
+          sourceElem._OVERRIDEN_.splice(sourceElem._OVERRIDEN_.indexOf('symbol'), 1);
+        }
+      } else {
+        if (!replace) elem._OVERRIDEN_ = true;
+        elements.push(elem);
+      }
+    });
+  } catch (e) {
+    console.log(e);
+    alert('There was a problem with your overrides.');
+  }
 
   const defaultSort = metadata._DEFAULT_SORT_;
   delete metadata._DEFAULT_SORT_;
@@ -821,9 +851,11 @@ function init([elements, metadata, , multiplayer]) {
     if (options.showGrid) {
       gridToggler.textContent = 'hide grid';
       document.body.style.backgroundImage = getGrid(localStorage.getItem('[olamreee] theme') === 'dark');
+      document.body.style.backgroundColor = null;
     } else {
       gridToggler.textContent = 'show grid';
       document.body.style.backgroundImage = 'none';
+      document.body.style.backgroundColor = 'white';
     }
   });
   document.getElementById('toggle-theme').addEventListener('click', e => {

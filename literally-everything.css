@@ -94,7 +94,7 @@ body.dark {
   width: 100%;
   font-size: 56px;
 }
-body.show-name .symbol {
+.show-name .symbol {
   top: 30px;
 }
 .selected {
@@ -123,6 +123,9 @@ body.show-name .symbol {
 }
 .note span {
   font-size: 150px;
+}
+.predicted {
+  opacity: 0.8;
 }
 
 .znote-unreactivemetal .znote { /* hardcoded exception oh well */

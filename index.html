@@ -12,7 +12,7 @@
     <script src="./brain.js" charset="utf-8"></script>
   </head>
   <body class="light">
-    <div id="cards"></div>
+    <div id="cards" class="show-name"></div>
     <div class="tooltip" id="mouse-tooltip">
       <h3>Mouse</h3>
       <p><code>ctrl</code> + scroll to zoom</p>
@@ -57,6 +57,7 @@
         <p>Default property shown: <input type="text" placeholder="show" value="" id="url-show"><br>
           Possible properties: <code>mass</code>, <code>state</code>, <code>melting</code>, <code>type</code>, <code>ie</code>, <code>note</code></p>
         <button class="menu-btn" id="gen-url">generate</button>
+        <p>You can override properties of certain elements or add new predicted elements using the <code>override</code> URL parameter; see <a href="./override-demo.md">here</a> for an example.</p>
         <h2>Help</h2>
         <button class="menu-btn" id="snap-toggle">disable snapping</button>
         <button class="menu-btn" id="toggle-theme">toggle theme</button>
@@ -84,6 +85,11 @@
         <p>In the "Generate URL" section above, make up a room ID and then click "generate"; then send the URL to your groupmates.</p>
         <p>If you don't want random people joining, set the room ID to something hard to guess, like a random string of numbers and letters.</p>
         <h2>Changelog</h2>
+        <p>Update 7</p>
+        <ul>
+          <li>added <code>override</code> URL parameter</li>
+          <li>hiding the grid now also makes the background white so it shows up better in your textbook</li>
+        </ul>
         <p>Update 6</p>
         <ul>
           <li>added <code>earth-melting</code> source; you can see the melting points of the Earthen elements <a href="?source=earth-melting&code=WyJoYXBweSBzaGVlcCIsW10sMCwwLDMxLDAsMCwxLDEsMSwyNiwxLDI3LDEsMjgsMSwyOSwxLDMwLDEsMzEsMSwwLDIsMSwyLDI2LDIsMjcsMiwyOCwyLDI5LDIsMzAsMiwzMSwyLDAsMywxLDMsMTYsMywxNywzLDE4LDMsMTksMywyMCwzLDIxLDMsMjIsMywyMywzLDI0LDMsMjUsMywyNiwzLDI3LDMsMjgsMywyOSwzLDMwLDMsMzEsMywwLDQsMSw0LDE2LDQsMTcsNCwxOCw0LDE5LDQsMjAsNCwyMSw0LDIyLDQsMjMsNCwyNCw0LDI1LDQsMjYsNCwyNyw0LDI4LDQsMjksNCwzMCw0LDMxLDQsMCw1LDEsNSwyLDUsMyw1LDQsNSw1LDUsNiw1LDcsNSw4LDUsOSw1LDEwLDUsMTEsNSwxMiw1LDEzLDUsMTQsNSwxNSw1LDE2LDUsMTcsNSwxOCw1LDE5LDUsMjAsNSwyMSw1LDIyLDUsMjMsNSwyNCw1LDI1LDUsMjYsNSwyNyw1LDI4LDUsMjksNSwzMCw1LDMxLDUsMCw2LDEsNiwyLDYsMyw2LDQsNiw1LDYsNiw2LDcsNiw4LDYsOSw2LDEwLDYsMTEsNiwxMiw2LDEzLDYsMTQsNiwxNSw2LDE2LDYsMTcsNiwxOCw2LDE5LDYsMjAsNiwyMSw2LDIyLDYsMjMsNiwyNCw2LDI1LDYsMjYsNiwyNyw2LDI4LDYsMjksNiwzMCw2LDMxLDZd&show=melting">here</a></li>
