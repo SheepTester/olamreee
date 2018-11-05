@@ -450,7 +450,11 @@ function init([elements, metadata, , multiplayer]) {
   if (params.key) urlKey.value = params.key;
   if (params.show) urlShow.value = params.show;
   generateURL.addEventListener('click', e => {
-    window.location = `?room=${urlRoom.value}&source=${urlSource.value}&key=${urlKey.value}&show=${urlShow.value}`;
+    if (urlRoom.value) params.room = urlRoom.value;
+    if (urlSource.value) params.source = urlSource.value;
+    if (urlKey.value) params.key = urlKey.value;
+    if (urlShow.value) params.show = urlShow.value;
+    window.location = `?` + Object.keys(params).map(prop => prop + '=' + params[prop]).join('&');
   });
 
   if (params.override) try {
@@ -461,14 +465,15 @@ function init([elements, metadata, , multiplayer]) {
       const sourceElem = elements.find(el => elem.symbol === el.symbol);
       if (sourceElem) {
         Object.keys(elem).forEach(val => {
-          sourceElem[val] = elem[val];
+          if (val !== '_REPLACE_')
+            sourceElem[val] = elem[val];
         });
-        if (!replace) {
+        if (!replace && !elem._REPLACE_) {
           sourceElem._OVERRIDEN_ = Object.keys(elem);
           sourceElem._OVERRIDEN_.splice(sourceElem._OVERRIDEN_.indexOf('symbol'), 1);
         }
       } else {
-        if (!replace) elem._OVERRIDEN_ = true;
+        if (!replace && !elem._REPLACE_) elem._OVERRIDEN_ = true;
         elements.push(elem);
       }
     });

@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <title>OlamREEE override editor</title>
+    <meta charset="UTF-8">
+    <meta name="description" content="A tool to brainstorm a periodic table for the elements on planet Olam."/>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+    <link rel="stylesheet" type="text/css" href="../sheep2.css">
+    <link rel="stylesheet" href="./literally-everything.css">
+    <script src="../sheep2.js" charset="utf-8"></script>
+    <style media="screen">
+      body {
+        padding: 20px;
+        box-sizing: border-box;
+        overflow: auto;
+      }
+    </style>
+  </head>
+  <body>
+    <h1><code>override</code> editor</h1>
+    <p>Add your predicted properties and elements here!</p>
+    <p>To see the format of certain properties (eg the values used for Special characteristics), you can look at the JSON source <a id="source">here</a>.</p>
+    <p><button class="menu-btn" id="add">add element</button></p>
+    <table id="table">
+      <tr id="heading"><th>Replace?</th><th>Name</th><th>Symbol*</th></tr>
+    </table>
+    <p>* required</p>
+    <p><a id="output" class="menu-btn" href="./">output link (click me when done)</a></p>
+    <p>If you want to override properties of an existing element, leave the other inputs blank; you only need to specify the atomic <em>symbol</em>.</p>
+    <p>Check Replace? if you want to actually overwrite the elements; otherwise OlamREEE will show your changes.</p>
+    <p>The output link uses a different save code because unfortunately overrides aren't compatible, so you'll have to manually remake your table of elements.</p>
+    <p>See <a href="./override-demo.md">here</a> for more details.</p>
+    <script type="text/javascript">
+// URL PARAMETERS
+// source   - where to load JSON data from
+// override - base64 encoded JSON to override/add properties (+: -; =: _)
+const params = {};
+if (window.location.search) {
+  window.location.search.slice(1).split('&').forEach(entry => {
+    const equalSignLoc = entry.indexOf('=');
+    if (~equalSignLoc) {
+      params[entry.slice(0, equalSignLoc)] = entry.slice(equalSignLoc + 1);
+    } else {
+      params[entry] = true;
+    }
+  });
+}
+
+const SOURCE = params.source ? params.source : './olam';
+
+function init([metadata]) {
+  const table = document.getElementById('table');
+  const tblHead = document.getElementById('heading');
+  const output = document.getElementById('output');
+
+  delete metadata._DEFAULT_SORT_;
+  const props = Object.keys(metadata).map(prop => {
+    const th = document.createElement('th');
+    th.textContent = metadata[prop]['show-btn'];
+    tblHead.appendChild(th);
+    return {prop: prop, number: metadata[prop].key.type === 'range', small: metadata[prop].short};
+  });
+  props.splice(0, 0, {prop: 'name', number: false, small: false}, {prop: 'symbol', number: false, small: true});
+
+  const elems = [];
+  function generate() {
+    const overrides = [];
+    elems.forEach(elem => {
+      const output = {};
+      if (elem[0].checked)
+        output._REPLACE_ = true;
+      elem.slice(1).forEach((input, index) => {
+        if (input.value) {
+          if (props[index].number)
+            output[props[index].prop] = +input.value;
+          else
+            output[props[index].prop] = input.value;
+        }
+      })
+      overrides.push(output);
+    });
+    output.href = `./?source=${SOURCE}&key=overriden&override=${btoa(JSON.stringify(overrides)).replace(/=/g, '_').replace(/\+/g, '-')}`;
+  }
+  document.getElementById('add').addEventListener('click', e => {
+    const tr = document.createElement('tr');
+    const checkTd = document.createElement('td');
+    const checkbox = document.createElement('input');
+    checkbox.type = 'checkbox';
+    checkTd.appendChild(checkbox);
+    tr.appendChild(checkTd);
+    const inputs = props.map(prop => {
+      const td = document.createElement('td');
+      const input = document.createElement('input');
+      if (prop.small) input.classList.add('small');
+      input.type = prop.number ? 'number' : 'text';
+      input.addEventListener('input', generate);
+      td.appendChild(input);
+      tr.appendChild(td);
+      return input;
+    });
+    inputs.splice(0, 0, checkbox);
+    const btnTd = document.createElement('td');
+    const button = document.createElement('button');
+    button.textContent = 'remove';
+    button.classList.add('menu-btn');
+    button.addEventListener('click', e => {
+      table.removeChild(tr);
+      elems.splice(elems.indexOf(inputs), 1);
+      generate();
+    }, {once: true});
+    btnTd.appendChild(button);
+    tr.appendChild(btnTd);
+    table.appendChild(tr);
+    elems.push(inputs);
+    generate();
+  });
+
+  document.body.classList.add(localStorage.getItem('[olamreee] theme') === 'dark' ? 'dark' : 'light');
+  document.getElementById('source').href = `${SOURCE}.json`;
+}
+
+Promise.all([
+  fetch(`${SOURCE}-metadata.json`).then(res => res.json()),
+  new Promise(res => document.addEventListener('DOMContentLoaded', res, {once: true}))
+]).then(init);
+    </script>
+  </body>
+</html>

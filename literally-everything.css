@@ -28,6 +28,7 @@ body.light {
   --input: rgba(0, 0, 0, 0.05);
   --floating-btn: white;
   --link: black;
+  --line: rgba(0, 0, 0, 0.2);
 }
 
 body.dark {
@@ -46,6 +47,7 @@ body.dark {
   --input: rgba(0, 0, 0, 0.05);
   --floating-btn: #18191C;
   --link: white;
+  --line: rgba(255, 255, 255, 0.3);
 }
 
 .card, .tooltip, button {
@@ -334,6 +336,9 @@ input {
   padding: 5px 10px;
   width: 100px;
 }
+input[type=number], .small {
+  width: 60px;
+}
 .menu-btn {
   vertical-align: middle;
   padding: 5px 10px;
@@ -347,6 +352,7 @@ input {
   color: inherit;
   cursor: pointer;
   border-radius: 5px;
+  text-decoration: none;
 }
 a {
   color: var(--link);
@@ -362,6 +368,14 @@ a {
   color: rgba(0, 0, 0, 0.5);
   pointer-events: none;
   margin: 20px 0;
+}
+
+table {
+  border-collapse: collapse;
+}
+table td, table th {
+  border: 1px solid var(--line);
+  padding: 5px;
 }
 
 .togetherjs-cursor, .togetherjs-focus {

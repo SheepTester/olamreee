@@ -20,7 +20,8 @@
         "liquid": "#638ed0",
         "gas": "#9bdfed"
       }
-    }
+    },
+    "short": true
   },
   "melting": {
     "show-btn": "Melting point",
@@ -43,7 +44,8 @@
         "nonmetal": "#9bdfed",
         "semimetal": "#7588a4"
       }
-    }
+    },
+    "short": true
   },
   "ie": {
     "show-btn": "Ionization energy (kJ)",
@@ -76,6 +78,7 @@
       "unreactive metal": "Badgerin, Brooklin, Tennessean, and Zinzan are rather unreactive metals that are used in Olamite coinage.",
       "high IE": "Margaran, Chameshan, Halfwanon and Gazozite have higher than expected ionization energies.",
       "_DEFAULT_": "This element isn't very special :("
-    }
+    },
+    "short": false
   }
 }
