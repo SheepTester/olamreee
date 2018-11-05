@@ -20,6 +20,9 @@ if (window.location.search) {
 const SOURCE = params.source ? params.source : './olam';
 const COOKIE_NAME = params.key ? '[olamreee] savecode.custom.' + params.key : '[olamreee] savecode' + SOURCE;
 
+const OLAMREEE_GENESIS = new Date(2018, 9, 26);
+const MS_PER_YEAR = 1000 * 60 * 60 * 24 * 365.25; // good enough approximation
+
 let multiplayerScriptTag;
 if (params.room) {
   window.TogetherJSConfig_siteName = 'OlamREEE';
@@ -449,6 +452,8 @@ function init([elements, metadata, , multiplayer]) {
   if (params.source) urlSource.value = params.source;
   if (params.key) urlKey.value = params.key;
   if (params.show) urlShow.value = params.show;
+  document.getElementById('predict-url').href = './override-editor.html' + window.location.search;
+  document.getElementById('age').textContent = Math.round((Date.now() - OLAMREEE_GENESIS) / MS_PER_YEAR * 10) / 10;
   generateURL.addEventListener('click', e => {
     if (urlRoom.value) params.room = urlRoom.value;
     if (urlSource.value) params.source = urlSource.value;

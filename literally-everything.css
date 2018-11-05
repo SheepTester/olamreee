@@ -353,6 +353,7 @@ input[type=number], .small {
   cursor: pointer;
   border-radius: 5px;
   text-decoration: none;
+  display: inline-block;
 }
 a {
   color: var(--link);

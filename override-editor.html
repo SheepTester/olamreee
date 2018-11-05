@@ -17,6 +17,7 @@
     </style>
   </head>
   <body>
+    <a href="./" class="close" id="back">back</a>
     <h1><code>override</code> editor</h1>
     <p>Add your predicted properties and elements here!</p>
     <p>To see the format of certain properties (eg the values used for Special characteristics), you can look at the JSON source <a id="source">here</a>.</p>
@@ -52,6 +53,7 @@ function init([metadata]) {
   const table = document.getElementById('table');
   const tblHead = document.getElementById('heading');
   const output = document.getElementById('output');
+  const addBtn = document.getElementById('add');
 
   delete metadata._DEFAULT_SORT_;
   const props = Object.keys(metadata).map(prop => {
@@ -81,7 +83,7 @@ function init([metadata]) {
     });
     output.href = `./?source=${SOURCE}&key=overriden&override=${btoa(JSON.stringify(overrides)).replace(/=/g, '_').replace(/\+/g, '-')}`;
   }
-  document.getElementById('add').addEventListener('click', e => {
+  addBtn.addEventListener('click', e => {
     const tr = document.createElement('tr');
     const checkTd = document.createElement('td');
     const checkbox = document.createElement('input');
@@ -115,8 +117,27 @@ function init([metadata]) {
     generate();
   });
 
+  if (params.override) try {
+    const overrides = JSON.parse(atob(params.override.replace(/_/g, '=').replace(/-/g, '+')));
+    const replace = overrides[0] === 'replace';
+    if (replace) overrides.splice(0, 1);
+    overrides.forEach(elem => {
+      addBtn.click();
+      const [checkbox, ...inputs] = elems[elems.length - 1];
+      checkbox.checked = replace || elem._REPLACE_;
+      Object.keys(elem).forEach(prop => {
+        const propIndex = props.findIndex(propObj => propObj.prop === prop);
+        if (~propIndex) inputs[propIndex].value = elem[prop];
+      });
+    });
+    generate();
+  } catch (e) {
+    console.log(e);
+  }
+
   document.body.classList.add(localStorage.getItem('[olamreee] theme') === 'dark' ? 'dark' : 'light');
   document.getElementById('source').href = `${SOURCE}.json`;
+  document.getElementById('back').href = './' + window.location.search;
 }
 
 Promise.all([

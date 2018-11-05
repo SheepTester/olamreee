@@ -35,7 +35,7 @@ Then we encode it in base64; I use JavaScript's built-in `btoa` function.
 
 With the resulting string we can insert it in our URL: `https://sheeptester.github.io/olamreee/?override=OVERRIDE_CODE_HERE`
 
-Notice how it adds asterisks to the new mass and makes the new element translucent. You can disable this by adding `"replace"` to the beginning of the array.
+Notice how it adds asterisks to the new mass and makes the new element translucent. You can disable this by adding `"replace"` to the beginning of the array (or add `"_REPLACE_": true` to each element).
 
 ```json
 [
