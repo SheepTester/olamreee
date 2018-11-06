@@ -1,0 +1,73 @@
+span.zmass, span.zmelting, span.zie {
+  display: block;
+}
+span.zie, span.zmelting {
+  bottom: 0;
+  top: auto;
+  text-align: left;
+  font-size: 18px;
+  padding: 5px;
+  box-sizing: border-box;
+}
+span.zie {
+  text-align: left;
+}
+span.zmelting {
+  text-align: right;
+}
+span.zmass {
+  font-size: 28px;
+  top: 5px;
+}
+span.name {
+  bottom: 24px;
+}
+span.symbol {
+  top: 30px;
+}
+#show-bar, #mouse-tooltip, #menu-btn {
+  display: none;
+}
+.card {
+  border-radius: 0;
+  border: 5px solid;
+}
+.card::before, .card::after {
+  content: '';
+  display: block;
+  position: absolute;
+  top: 0;
+  margin: 5px;
+  height: 32px;
+  width: 32px;
+}
+.card::before {
+  left: 0;
+  background-image: url('images/icons.svg');
+  background-size: 32px;
+  background-repeat: no-repeat;
+  opacity: 0.6;
+}
+.card::after {
+  right: 0;
+}
+
+.zstate-solid::before {
+  background-position: 0 0;
+}
+.zstate-liquid::before {
+  background-position: 0 -32px;
+}
+.zstate-gas::before {
+  background-position: 0 -64px;
+}
+
+.ztype-metal {
+  border-color: #929292;
+}
+.ztype-semimetal {
+  border-color: #2f415a;
+}
+.ztype-nonmetal {
+  border-color: #1fbfe0;
+}
