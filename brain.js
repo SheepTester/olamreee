@@ -911,7 +911,7 @@ function init([elements, metadata, , multiplayer]) {
       camera.y += (e.shiftKey ? e.deltaX : e.deltaY) / camera.scale;
       if (e.deltaX) e.preventDefault();
     }
-  });
+  }, {passive: false});
 
   document.addEventListener('contextmenu', e => {
     e.preventDefault();
