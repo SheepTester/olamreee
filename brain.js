@@ -80,7 +80,20 @@ function createFragment(elems) {
 }
 
 function classnameify(value) {
-  return value.toLowerCase().replace(/^([0-9-])/g, 'z$1').replace(/[^a-z0-9-]/g, '') || 'z' + value.charCodeAt();
+  return value
+    .toString()
+    .toLowerCase()
+    .replace(/^([0-9-])/g, 'z$1')
+    .replace(/[^a-z0-9-]/g, '') || 'z' + value.charCodeAt();
+}
+
+function shuffleInPlace(array) {
+  for (let i = array.length - 1; i >= 1; i--) {
+    const index = Math.floor(Math.random() * i);
+    // Swap ith item with a random item before it
+    [array[i], array[index]] = [array[index], array[i]];
+  }
+  return array;
 }
 
 class Card {
@@ -279,10 +292,13 @@ class ElementCard extends Card {
       } else {
         elem.classList.add(`z${prop}-${classnameify(data[prop])}`);
       }
-      if (Array.isArray(data._OVERRIDEN_) && data._OVERRIDEN_.includes(prop))
-        innerHTML += `<span class="z${prop} overriden">${data[prop]}*</span>`;
-      else
-        innerHTML += `<span class="z${prop}">${data[prop]}</span>`;
+      if (!metadata[prop]['colours-only']) {
+        if (Array.isArray(data._OVERRIDEN_) && data._OVERRIDEN_.includes(prop)) {
+          innerHTML += `<span class="z${prop} overriden">${data[prop]}*</span>`;
+        } else {
+          innerHTML += `<span class="z${prop}">${data[prop]}</span>`;
+        }
+      }
     });
     elem.innerHTML = innerHTML;
     this.identifier = this.data.symbol;
@@ -553,6 +569,7 @@ function init([elements, metadata, , multiplayer]) {
   style.innerHTML = css;
   document.head.appendChild(style);
   if (params.show) cardsWrapper.classList.add('show-' + params.show);
+  else cardsWrapper.classList.add('show-name');
 
   noteEditor.addEventListener('change', e => {
     if (cardParent.editingNote) {
@@ -850,9 +867,16 @@ function init([elements, metadata, , multiplayer]) {
     }
   });
 
-  elements.sort((a, b) => a.data[defaultSort] - b.data[defaultSort]).forEach((card, i) => {
-    card.reposition(i, 0);
-  });
+  if (defaultSort === '_random_') {
+    const width = Math.ceil(Math.sqrt(elements.length));
+    shuffleInPlace(elements).forEach((card, i) => {
+      card.reposition(i % width, Math.floor(i / width));
+    });
+  } else {
+    elements.sort((a, b) => a.data[defaultSort] - b.data[defaultSort]).forEach((card, i) => {
+      card.reposition(i, 0);
+    });
+  }
 
   document.body.style.backgroundImage = getGrid(localStorage.getItem('[olamreee] theme') === 'dark');
   document.body.className = localStorage.getItem('[olamreee] theme') === 'dark' ? 'dark' : 'light';
