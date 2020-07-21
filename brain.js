@@ -957,6 +957,9 @@ function init([elements, metadata, , multiplayer]) {
     e.preventDefault();
   });
 
+  if (params.hideShowBar) {
+    showBar.classList.add('hidden');
+  }
   showBar.addEventListener('click', e => {
     if (e.target.dataset.prop) {
       cardsWrapper.className = 'show-' + e.target.dataset.prop;
