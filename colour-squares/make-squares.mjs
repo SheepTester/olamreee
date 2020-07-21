@@ -1,7 +1,5 @@
 import {promises as fs} from 'fs';
 
-const squareLineRegex = /([0-9a-z]+) (?:(\d+)|\((\d+)\))/i;
-
 async function main() {
   const filePath = new URL('./squares.txt', import.meta.url);
   const outputPath = new URL('./squares.json', import.meta.url);
@@ -22,13 +20,12 @@ async function main() {
   const coloursRef = metadata.symbol.key.colours;
   for (const line of (await fs.readFile(filePath, 'utf8')).split(/\r?\n/)) {
     if (!line) continue;
-    const [, hexColour, cardMassStr, hiddenMassStr] = squareLineRegex.exec(line);
-    const massStr = cardMassStr || hiddenMassStr;
+    const [hexColour, massStr] = line.split(' ');
     coloursRef[massStr] = `#${hexColour}`;
     elements.push({
       symbol: massStr,
       name: '',
-      hidden: !!hiddenMassStr
+      hidden: massStr[0] === '('
     });
   }
   await fs.writeFile(outputPath, JSON.stringify(elements, null, 2));

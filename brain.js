@@ -272,6 +272,14 @@ class Card {
     this.parent.cards.find(card => card.getIntPos(true) === pos).elem.classList.remove('stacked');
   }
 
+  hide() {
+    this.elem.classList.add('hidden');
+  }
+
+  show() {
+    this.elem.classList.remove('hidden')
+  }
+
 }
 
 class ElementCard extends Card {
@@ -732,7 +740,14 @@ function init([elements, metadata, , multiplayer]) {
   }
   document.querySelectorAll('.overlay input, .overlay textarea, .overlay button, .overlay a')
     .forEach(elem => elem.setAttribute('tabindex', '-1'));
-  elements = elements.map(data => new ElementCard(cardParent, data));
+  elements = elements.map(data => {
+    const card = new ElementCard(cardParent, data);
+    if (!params.showAll && data.hidden) {
+      // card.unposition();
+      card.hide();
+    }
+    return card;
+  });
   cardParent.elements = elements;
   cardsWrapper.appendChild(createFragment(elements.map(card => card.elem)));
 
@@ -867,13 +882,14 @@ function init([elements, metadata, , multiplayer]) {
     }
   });
 
+  const visibleElements = elements.filter(elem => !elem.data.hidden);
   if (defaultSort === '_random_') {
-    const width = Math.ceil(Math.sqrt(elements.length));
-    shuffleInPlace(elements).forEach((card, i) => {
+    const width = Math.ceil(Math.sqrt(visibleElements.length));
+    shuffleInPlace(visibleElements).forEach((card, i) => {
       card.reposition(i % width, Math.floor(i / width));
     });
   } else {
-    elements.sort((a, b) => a.data[defaultSort] - b.data[defaultSort]).forEach((card, i) => {
+    visibleElements.sort((a, b) => a.data[defaultSort] - b.data[defaultSort]).forEach((card, i) => {
       card.reposition(i, 0);
     });
   }
