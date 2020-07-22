@@ -5,36 +5,36 @@
 // code     - the code to load (+: -; =: _)
 // show     - filter to show by default
 // override - base64 encoded JSON to override/add properties (+: -; =: _)
-const params = {};
-if (window.location.search) {
-  window.location.search.slice(1).split('&').forEach(entry => {
-    const equalSignLoc = entry.indexOf('=');
-    if (~equalSignLoc) {
-      params[entry.slice(0, equalSignLoc)] = entry.slice(equalSignLoc + 1);
-    } else {
-      params[entry] = true;
-    }
-  });
+// barless  - hides the top bar with the filter options
+// url      - a URL to replace the actual one with
+// title    - the page title
+// reveal   - show all hidden cards
+const params = new URL(window.location).searchParams;
+
+if (params.get('title')) {
+  document.title = decodeURIComponent(params.get('title'));
 }
 
-const SOURCE = params.source ? params.source : './olam';
-const COOKIE_NAME = params.key ? '[olamreee] savecode.custom.' + params.key : '[olamreee] savecode' + SOURCE;
+const SOURCE = params.get('source') ? params.get('source') : './olam';
+const COOKIE_NAME = params.get('key') ? '[olamreee] savecode.custom.' + params.get('key') : '[olamreee] savecode' + SOURCE;
 
 const OLAMREEE_GENESIS = new Date(2018, 9, 26);
 const MS_PER_YEAR = 1000 * 60 * 60 * 24 * 365.25; // good enough approximation
 
 let multiplayerScriptTag;
-if (params.room) {
+if (params.get('room')) {
   window.TogetherJSConfig_siteName = 'OlamREEE';
   window.TogetherJSConfig_toolName = 'Happy Sheep Collaboration Tool';
   window.TogetherJSConfig_dontShowClicks = true;
-  window.TogetherJSConfig_findRoom = params.room;
+  window.TogetherJSConfig_findRoom = params.get('room');
   window.TogetherJSConfig_autoStart = true;
   window.TogetherJSConfig_suppressJoinConfirmation = true;
   window.TogetherJSConfig_suppressInvite = true;
   window.TogetherJSConfig_youtube = false;
   window.TogetherJSConfig_ignoreMessages = true;
   window.TogetherJSConfig_ignoreForms = true;
+  // https://github.com/jsfiddle/togetherjs/issues/1172
+  window.TogetherJSConfig_hubBase = 'https://togetherjs-hub.glitch.me/';
   multiplayerScriptTag = document.createElement('script');
   multiplayerScriptTag.src = 'https://togetherjs.com/togetherjs-min.js';
   document.head.appendChild(multiplayerScriptTag);
@@ -100,7 +100,7 @@ class Card {
 
   constructor(parent) {
     this.parent = parent;
-    this.x = 0, this.y = 0;
+    this.x = null, this.y = null;
     this.dragData = null;
     this.selected = false;
     const elem = document.createElement('div');
@@ -252,6 +252,7 @@ class Card {
   }
 
   getIntPos(strNotation) {
+    if (this.x === null) return [null, null];
     const x = Math.round(this.x / GRID_SIZE);
     const y = Math.round(this.y / GRID_SIZE);
     if (strNotation) return x + '.' + y;
@@ -262,14 +263,18 @@ class Card {
     if (move && this.snapped) {
       this.unposition();
     }
-    this.setPos(x * GRID_SIZE, y * GRID_SIZE);
-    this.snap();
+    if (x !== null) {
+      this.setPos(x * GRID_SIZE, y * GRID_SIZE);
+      this.snap();
+    }
   }
 
   unposition() {
     const pos = this.getIntPos(true);
     this.parent.positions[pos]--;
     this.parent.cards.find(card => card.getIntPos(true) === pos).elem.classList.remove('stacked');
+    this.x = null;
+    this.y = null;
   }
 
   hide() {
@@ -467,27 +472,32 @@ function init([elements, metadata, , multiplayer]) {
   const noteEditor = document.getElementById('note-content');
   const disableNotesBtn = document.getElementById('notes-disable');
 
+  if (params.get('url')) {
+    window.history.replaceState({}, '', decodeURIComponent(params.get('url')));
+    params.delete('url');
+  }
+
   [urlRoom, urlSource, urlKey, urlShow].forEach(input => input.addEventListener('keydown', e => {
     if (e.keyCode === 13) {
       generateURL.click();
     }
   }));
-  if (params.room) urlRoom.value = params.room;
-  if (params.source) urlSource.value = params.source;
-  if (params.key) urlKey.value = params.key;
-  if (params.show) urlShow.value = params.show;
+  if (params.get('room')) urlRoom.value = params.get('room');
+  if (params.get('source')) urlSource.value = params.get('source');
+  if (params.get('key')) urlKey.value = params.get('key');
+  if (params.get('show')) urlShow.value = params.get('show');
   document.getElementById('predict-url').href = './override-editor.html' + window.location.search;
   document.getElementById('age').textContent = Math.round((Date.now() - OLAMREEE_GENESIS) / MS_PER_YEAR * 10) / 10;
   generateURL.addEventListener('click', e => {
-    if (urlRoom.value) params.room = urlRoom.value;
-    if (urlSource.value) params.source = urlSource.value;
-    if (urlKey.value) params.key = urlKey.value;
-    if (urlShow.value) params.show = urlShow.value;
-    window.location = `?` + Object.keys(params).map(prop => prop + '=' + params[prop]).join('&');
+    if (urlRoom.value) params.set('room', urlRoom.value);
+    if (urlSource.value) params.set('source', urlSource.value);
+    if (urlKey.value) params.set('key', urlKey.value);
+    if (urlShow.value) params.set('show', urlShow.value);
+    window.location = `./?` + params.toString();
   });
 
-  if (params.override) try {
-    const overrides = JSON.parse(atob(params.override.replace(/_/g, '=').replace(/-/g, '+')));
+  if (params.get('override')) try {
+    const overrides = JSON.parse(atob(params.get('override').replace(/_/g, '=').replace(/-/g, '+')));
     const replace = overrides[0] === 'replace';
     if (replace) overrides.splice(0, 1);
     overrides.forEach(elem => {
@@ -576,7 +586,7 @@ function init([elements, metadata, , multiplayer]) {
   const style = document.createElement('style');
   style.innerHTML = css;
   document.head.appendChild(style);
-  if (params.show) cardsWrapper.classList.add('show-' + params.show);
+  if (params.get('show')) cardsWrapper.classList.add('show-' + params.get('show'));
   else cardsWrapper.classList.add('show-name');
 
   noteEditor.addEventListener('change', e => {
@@ -742,8 +752,7 @@ function init([elements, metadata, , multiplayer]) {
     .forEach(elem => elem.setAttribute('tabindex', '-1'));
   elements = elements.map(data => {
     const card = new ElementCard(cardParent, data);
-    if (!params.showAll && data.hidden) {
-      // card.unposition();
+    if (!params.get('reveal') && data.hidden) {
       card.hide();
     }
     return card;
@@ -957,7 +966,7 @@ function init([elements, metadata, , multiplayer]) {
     e.preventDefault();
   });
 
-  if (params.hideShowBar) {
+  if (params.get('barless')) {
     showBar.classList.add('hidden');
   }
   showBar.addEventListener('click', e => {
@@ -1009,8 +1018,8 @@ function init([elements, metadata, , multiplayer]) {
     });
     return btoa(JSON.stringify(vals));
   }
-  if (params.code)
-    load(params.code.replace(/_/g, '=').replace(/-/g, '+'));
+  if (params.get('code'))
+    load(params.get('code').replace(/_/g, '=').replace(/-/g, '+'));
   else if (localStorage.getItem(COOKIE_NAME))
     load(localStorage.getItem(COOKIE_NAME));
   document.getElementById('menu-btn').addEventListener('click', e => {
@@ -1128,5 +1137,5 @@ Promise.all([
   fetch(`${SOURCE}.json`).then(res => res.json()),
   fetch(`${SOURCE}-metadata.json`).then(res => res.json()),
   new Promise(res => document.addEventListener('DOMContentLoaded', res, {once: true})),
-  params.room && new Promise(res => multiplayerScriptTag.onload = res)
+  params.get('room') && new Promise(res => multiplayerScriptTag.onload = res)
 ]).then(init);

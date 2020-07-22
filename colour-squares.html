@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+
+    <title>Coloured squares | OlamREEE</title>
+    <meta name="description" content="Periodic trends activity"/>
+
+    <script type="text/javascript">
+      const params = new URLSearchParams();
+      params.set('source', 'colour-squares/squares');
+      params.set('show', 'symbol');
+      params.set('barless', true);
+      params.set('url', window.location.href);
+      params.set('title', document.title);
+      window.location.replace(`./?${params.toString()}`);
+    </script>
+
+    <link rel="stylesheet" type="text/css" href="/sheep3.css">
+    <script src="/sheep3.js" charset="utf-8"></script>
+
+    <style>
+      html,
+      body {
+        height: 100%;
+      }
+      body {
+        margin: 0;
+        display: flex;
+      }
+      iframe {
+        flex: auto;
+        border: none;
+      }
+    </style>
+  </head>
+  <body>
+    <iframe src="./?source=colour-squares/squares&show=symbol&barless=true&replaceUrl=./colour-squares.html"></iframe>
+  </body>
+</html>
