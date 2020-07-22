@@ -8,7 +8,7 @@
     <meta name="description" content="Periodic trends activity"/>
 
     <script type="text/javascript">
-      const params = new URLSearchParams();
+      const params = new URL(window.location).searchParams;
       params.set('source', 'colour-squares/squares');
       params.set('show', 'symbol');
       params.set('barless', true);
