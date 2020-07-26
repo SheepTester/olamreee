@@ -103,6 +103,7 @@ class Card {
     this.x = null, this.y = null;
     this.dragData = null;
     this.selected = false;
+    this.hidden = false;
     const elem = document.createElement('div');
     elem.classList.add('card');
     this.elem = elem;
@@ -260,6 +261,10 @@ class Card {
   }
 
   reposition(x, y, move = false) {
+    if (this.hidden) {
+      this.hidden = [x, y];
+      return;
+    }
     if (move && this.snapped) {
       this.unposition();
     }
@@ -278,11 +283,19 @@ class Card {
   }
 
   hide() {
-    this.elem.classList.add('hidden');
+    if (!this.hidden) {
+      this.elem.classList.add('hidden');
+      this.hidden = this.getIntPos(false);
+      if (this.x !== null) this.unposition();
+    }
   }
 
   show() {
-    this.elem.classList.remove('hidden')
+    if (this.hidden) {
+      this.elem.classList.remove('hidden');
+      if (this.hidden[0] === null) this.reposition(this.elem, ...this.hidden);
+      this.hidden = false;
+    }
   }
 
 }
@@ -892,14 +905,22 @@ function init([elements, metadata, , multiplayer]) {
   });
 
   const visibleElements = elements.filter(elem => !elem.data.hidden);
+  const hiddenElements = elements.filter(elem => elem.data.hidden);
   if (defaultSort === '_random_') {
     const width = Math.ceil(Math.sqrt(visibleElements.length));
     shuffleInPlace(visibleElements).forEach((card, i) => {
       card.reposition(i % width, Math.floor(i / width));
     });
+    shuffleInPlace(hiddenElements).forEach((card, i) => {
+      i += visibleElements.length;
+      card.reposition(i % width, Math.floor(i / width));
+    });
   } else {
     visibleElements.sort((a, b) => a.data[defaultSort] - b.data[defaultSort]).forEach((card, i) => {
       card.reposition(i, 0);
+    });
+    hiddenElements.forEach((card, i) => {
+      card.reposition(visibleElements.length + i, 0);
     });
   }
 
@@ -1014,7 +1035,7 @@ function init([elements, metadata, , multiplayer]) {
       cardParent.notes.map(note => [note.noteContent, ...note.getIntPos(false)])
     ];
     elements.forEach(card => {
-      vals.push(...card.getIntPos(false));
+      vals.push(...(card.hidden || card.getIntPos(false)));
     });
     return btoa(JSON.stringify(vals));
   }
